@@ -20,7 +20,7 @@ const MIX = [
   {n:'Mel',e:'🍯'},
 ];
 
-const TAMANHO_GELATOS = [
+const GELATOS = [
   {n:'Ninho Trufado',     e:'🍦', preco:22},
   {n:'Ninho c/ Pistache', e:'🟢', preco:24},
   {n:'Oreo',              e:'🖤', preco:20},
