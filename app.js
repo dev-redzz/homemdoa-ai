@@ -49,7 +49,7 @@ const GELATO_TAMANHOS = [
   {tam:'300ml', preco:16, label:'Pequeno', limite:4},
   {tam:'500ml', preco:25, label:'Médio',   limite:5},
   {tam:'750ml', preco:33, label:'Grande',  limite:6},
-  {tam:'1kg',   preco:45, label:'Mega',    limite:99},
+  {tam:'1kg',   preco:49.90, label:'Mega',    limite:99},
 ];
 
 /* ── ESTADO ── */
@@ -66,6 +66,8 @@ let cart = [];
 function addToCart(item){ cart.push(item); updateCartUI(); }
 function removeFromCart(idx){ cart.splice(idx,1); updateCartUI(); }
 
+function fmtPreco(v){ return 'R$ '+v.toFixed(2).replace('.',','); }
+
 function updateCartUI(){
   const count = cart.length;
   const total = cart.reduce((s,i)=>s+i.preco,0);
@@ -73,7 +75,7 @@ function updateCartUI(){
     b.textContent=count; b.style.display=count>0?'flex':'none';
   });
   const el=document.getElementById('cartTotal');
-  if(el) el.textContent='R$ '+total+',00';
+  if(el) el.textContent=fmtPreco(total);
   const list=document.getElementById('cartList');
   if(!list) return;
   list.innerHTML='';
@@ -86,7 +88,7 @@ function updateCartUI(){
         <span class="ci-det">${item.detalhe}</span>
       </div>
       <div class="ci-right">
-        <span class="ci-preco">R$ ${item.preco},00</span>
+        <span class="ci-preco">${fmtPreco(item.preco)}</span>
         <button class="ci-rem" onclick="removeFromCart(${idx})" title="Remover">&#x2715;</button>
       </div>`;
     list.appendChild(div);
@@ -194,11 +196,7 @@ function abrirModal(cat, tam, preco, limite){
 
   /* mix */
   if(ilimitado){
-    const blocoMix=document.createElement('div'); blocoMix.className='bloco';
-    const tM=document.createElement('div'); tM.className='bloco-titulo'; tM.textContent='Complementos';
-    const aviso=document.createElement('div'); aviso.className='aviso-vontade';
-    aviso.textContent='🎉 À vontade! Informe nas observações';
-    blocoMix.appendChild(tM); blocoMix.appendChild(aviso); corpo.appendChild(blocoMix);
+    corpo.appendChild(criarBlocoMixIlimitado('mixWrap'));
   } else {
     corpo.appendChild(criarBlocoMix('mixWrap', limite));
   }
@@ -291,11 +289,7 @@ function abrirModalGelato(gt){
 
   /* mix */
   if(gt.limite>=99){
-    const blocoMix=document.createElement('div'); blocoMix.className='bloco';
-    const tM=document.createElement('div'); tM.className='bloco-titulo'; tM.textContent='Complementos';
-    const aviso=document.createElement('div'); aviso.className='aviso-vontade';
-    aviso.textContent='🎉 À vontade! Informe nas observações';
-    blocoMix.appendChild(tM); blocoMix.appendChild(aviso); corpo.appendChild(blocoMix);
+    corpo.appendChild(criarBlocoMixIlimitado('mixWrapG'));
   } else {
     corpo.appendChild(criarBlocoMix('mixWrapG', gt.limite));
   }
@@ -343,7 +337,28 @@ function criarBlocoMix(wrapId, limite){
   return blocoM;
 }
 
-function criarBlocoObs(ilimitado){
+function criarBlocoMixIlimitado(wrapId){
+  const mixDiv=document.createElement('div'); mixDiv.className='chips-mix'; mixDiv.id=wrapId;
+  const badge=document.createElement('span'); badge.className='contagem'; badge.id='contagem'; badge.textContent='🎉 À vontade';
+  const tM=document.createElement('div'); tM.className='bloco-titulo';
+  tM.innerHTML='Complementos'; tM.appendChild(badge);
+  MIX.forEach(m=>{
+    const b=document.createElement('button'); b.className='chip-mix';
+    b.innerHTML='<em>'+m.e+'</em>'+m.n; b.dataset.v=m.n;
+    b.addEventListener('click',()=>{
+      if(b.classList.contains('ativo')){ S.mix=S.mix.filter(x=>x!==m.n); b.classList.remove('ativo'); }
+      else { S.mix.push(m.n); b.classList.add('ativo'); }
+      badge.textContent=S.mix.length>0?'🎉 '+S.mix.length+' selecionado(s)':'🎉 À vontade';
+      atualizarBarra();
+    });
+    mixDiv.appendChild(b);
+  });
+  const blocoM=document.createElement('div'); blocoM.className='bloco';
+  blocoM.appendChild(tM); blocoM.appendChild(mixDiv);
+  return blocoM;
+}
+
+
   const b=document.createElement('div'); b.className='bloco'; b.id='blocoObs';
   const t=document.createElement('div'); t.className='bloco-titulo';
   t.innerHTML='Observações <span class="obrig">(opcional)</span>';
@@ -411,8 +426,7 @@ function adicionarAoCarrinho(){
     if(S.comGelatoExtra && !S.gelatoExtraNome){ toast('Escolha o sabor do gelato'); return; }
     if(!S.creme){ toast('Escolha um creme'); return; }
     const ilimitado=S.limite>=99;
-    if(!ilimitado&&!S.mix.length){ toast('Adicione pelo menos 1 complemento'); return; }
-    const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
+    if(!ilimitado&&!S.mix.length){ toast('Adicione pelo menos 1 complemento'); return; }    const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
     addToCart({
       tipo:'acai',
       nome:`Açaí ${S.tipo} ${S.tam}${gelatoSufixo}`,
@@ -449,8 +463,8 @@ function renderCheckoutResumo(){
   el.innerHTML=cart.map(i=>`
     <div class="checkout-item">
       <span>${i.nome}</span>
-      <span>R$ ${i.preco},00</span>
-    </div>`).join('')+`<div class="checkout-total-row"><strong>Total</strong><strong>R$ ${total},00</strong></div>`;
+      <span>${fmtPreco(i.preco)}</span>
+    </div>`).join('')+`<div class="checkout-total-row"><strong>Total</strong><strong>${fmtPreco(total)}</strong></div>`;
 }
 
 function enviarPedidoWhatsApp(){
@@ -471,7 +485,7 @@ function enviarPedidoWhatsApp(){
 
   const endCompleto=`${rua}, ${numero} — ${bairro}`;
   const total=cart.reduce((s,i)=>s+i.preco,0);
-  const itensTexto=cart.map(i=>'• '+i.nome+'\n  '+i.detalhe+'\n  R$ '+i.preco+',00').join('\n\n');
+  const itensTexto=cart.map(i=>'• '+i.nome+'\n  '+i.detalhe+'\n  '+fmtPreco(i.preco)).join('\n\n');
 
   const pagLine = pag==='Dinheiro' && troco
     ? `*Pagamento:* Dinheiro — troco para ${troco}`
@@ -482,7 +496,7 @@ function enviarPedidoWhatsApp(){
   const linhas=[
     '🍇 *Olá! Novo pedido:*','',
     itensTexto,'',
-    '*Total:* R$ '+total+',00','',
+    '*Total:* '+fmtPreco(total),'',
     '*Nome:* '+nome,
     '*Telefone:* '+tel,
     '*Endereço:* '+endCompleto,
