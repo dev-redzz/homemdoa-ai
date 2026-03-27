@@ -881,3 +881,24 @@ footer {
 }
 .campo-sm { flex: 0 0 90px; }
 .campo-lg { flex: 1; }
+
+/* ── DICA VONTADE (observações 1kg) ── */
+.obs-dica-vontade {
+  background: linear-gradient(135deg, #f3e8ff 0%, #fce7f3 100%);
+  border: 1.5px solid var(--prim, #9333ea);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: .82rem;
+  color: #5b21b6;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+.obs-dica-vontade strong { color: #7e22ce; }
+
+/* ── CAMPO HINT (troco) ── */
+.campo-hint {
+  display: block;
+  font-size: .75rem;
+  color: #888;
+  margin-top: 4px;
+}

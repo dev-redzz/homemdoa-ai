@@ -203,7 +203,7 @@ function abrirModal(cat, tam, preco, limite){
     corpo.appendChild(criarBlocoMix('mixWrap', limite));
   }
 
-  corpo.appendChild(criarBlocoObs());
+  corpo.appendChild(criarBlocoObs(ilimitado));
   document.getElementById('mBarra').style.width='0%';
   document.getElementById('modalBg').classList.add('aberto');
   document.body.style.overflow='hidden';
@@ -300,7 +300,7 @@ function abrirModalGelato(gt){
     corpo.appendChild(criarBlocoMix('mixWrapG', gt.limite));
   }
 
-  corpo.appendChild(criarBlocoObs());
+  corpo.appendChild(criarBlocoObs(gt.limite>=99));
   document.getElementById('mBarra').style.width='0%';
   document.getElementById('modalBg').classList.add('aberto');
   document.body.style.overflow='hidden';
@@ -343,12 +343,25 @@ function criarBlocoMix(wrapId, limite){
   return blocoM;
 }
 
-function criarBlocoObs(){
+function criarBlocoObs(ilimitado){
   const b=document.createElement('div'); b.className='bloco'; b.id='blocoObs';
   const t=document.createElement('div'); t.className='bloco-titulo';
   t.innerHTML='Observações <span class="obrig">(opcional)</span>';
-  const ta=document.createElement('textarea'); ta.id='obsInput'; ta.placeholder='Ex: sem granola, bem gelado...';
-  b.appendChild(t); b.appendChild(ta); return b;
+
+  if(ilimitado){
+    const dica=document.createElement('div'); dica.className='obs-dica-vontade';
+    dica.innerHTML='<strong>✏️ Como personalizar seu pedido 1kg:</strong><br>'
+      +'Informe aqui a <strong>quantidade de açaí</strong> desejada, o <strong>creme</strong> que prefere e <strong>quais complementos / mix</strong> quer e em que quantidade. Os mix são <strong>à vontade</strong>, coloque o quanto quiser! 🎉';
+    b.appendChild(t); b.appendChild(dica);
+  } else {
+    b.appendChild(t);
+  }
+
+  const ta=document.createElement('textarea'); ta.id='obsInput';
+  ta.placeholder=ilimitado
+    ? 'Ex: mais açaí e menos creme, bastante granola e castanha, extra leite condensado...'
+    : 'Ex: sem granola, bem gelado, pouco creme...';
+  b.appendChild(ta); return b;
 }
 
 function escolherTipo(btn){
@@ -447,6 +460,7 @@ function enviarPedidoWhatsApp(){
   const numero=document.getElementById('inputNumero')?.value.trim();
   const bairro=document.getElementById('inputBairro')?.value.trim();
   const pag=document.querySelector('input[name="pagamento"]:checked')?.value;
+  const troco=document.getElementById('inputTroco')?.value.trim();
 
   if(!nome){ toast('Informe seu nome'); return; }
   if(!tel){ toast('Informe seu número'); return; }
@@ -459,6 +473,12 @@ function enviarPedidoWhatsApp(){
   const total=cart.reduce((s,i)=>s+i.preco,0);
   const itensTexto=cart.map(i=>'• '+i.nome+'\n  '+i.detalhe+'\n  R$ '+i.preco+',00').join('\n\n');
 
+  const pagLine = pag==='Dinheiro' && troco
+    ? `*Pagamento:* Dinheiro — troco para ${troco}`
+    : pag==='Dinheiro'
+      ? '*Pagamento:* Dinheiro — sem troco'
+      : `*Pagamento:* ${pag}`;
+
   const linhas=[
     '🍇 *Olá! Novo pedido:*','',
     itensTexto,'',
@@ -466,7 +486,7 @@ function enviarPedidoWhatsApp(){
     '*Nome:* '+nome,
     '*Telefone:* '+tel,
     '*Endereço:* '+endCompleto,
-    '*Pagamento:* '+pag,'',
+    pagLine,'',
     '📲 Aguardo confirmação!'
   ];
 
@@ -481,6 +501,18 @@ const drawer=document.getElementById('navDrawer');
 burger.addEventListener('click',()=>{ drawer.classList.toggle('open'); burger.classList.toggle('open'); });
 function closeMenu(){ drawer.classList.remove('open'); burger.classList.remove('open'); }
 document.addEventListener('click',e=>{ if(!e.target.closest('#header')) closeMenu(); });
+
+/* ── TROCO: mostrar/ocultar campo ao selecionar Dinheiro ── */
+document.addEventListener('change', e=>{
+  if(e.target.name==='pagamento'){
+    const trocoWrap=document.getElementById('trocoWrap');
+    if(trocoWrap) trocoWrap.style.display = e.target.value==='Dinheiro' ? 'block' : 'none';
+    if(e.target.value!=='Dinheiro'){
+      const inp=document.getElementById('inputTroco');
+      if(inp) inp.value='';
+    }
+  }
+});
 
 /* ── HEADER SCROLL ── */
 window.addEventListener('scroll',()=>{
