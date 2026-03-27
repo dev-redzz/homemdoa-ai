@@ -359,6 +359,7 @@ function criarBlocoMixIlimitado(wrapId){
 }
 
 
+function criarBlocoObs(ilimitado){
   const b=document.createElement('div'); b.className='bloco'; b.id='blocoObs';
   const t=document.createElement('div'); t.className='bloco-titulo';
   t.innerHTML='Observações <span class="obrig">(opcional)</span>';
@@ -426,7 +427,8 @@ function adicionarAoCarrinho(){
     if(S.comGelatoExtra && !S.gelatoExtraNome){ toast('Escolha o sabor do gelato'); return; }
     if(!S.creme){ toast('Escolha um creme'); return; }
     const ilimitado=S.limite>=99;
-    if(!ilimitado&&!S.mix.length){ toast('Adicione pelo menos 1 complemento'); return; }    const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
+    if(!ilimitado&&!S.mix.length){ toast('Adicione pelo menos 1 complemento'); return; }
+    const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
     addToCart({
       tipo:'acai',
       nome:`Açaí ${S.tipo} ${S.tam}${gelatoSufixo}`,
