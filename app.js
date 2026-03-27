@@ -20,54 +20,64 @@ const MIX = [
   {n:'Mel',e:'🍯'},
 ];
 
-const GELATOS = [
-  {n:'Ninho Trufado',     e:'🍦', preco:22},
-  {n:'Ninho c/ Pistache', e:'🟢', preco:24},
-  {n:'Oreo',              e:'🖤', preco:20},
-  {n:'Flocos',            e:'✨', preco:20},
-  {n:'Choco Belga',       e:'🍫', preco:22},
-  {n:'Delicia de Abacaxi',e:'🍍', preco:20},
-  {n:'Unicornio',         e:'🦄', preco:24},
-  {n:'Brownie',           e:'🟫', preco:22},
-  {n:'Pistache',          e:'🟩', preco:24},
-  {n:'Tapioca',           e:'⚪', preco:20},
+const GELATO_COBERTURAS = [
+  {n:'Beijos',e:'💋'},
+  {n:'Dentaduras',e:'🦷'},
+  {n:'Bananas',e:'🍌'},
+  {n:'Menta',e:'🌿'},
+  {n:'Leite Condensado',e:'🥛'},
+  {n:'Baunilha',e:'🍦'},
+  {n:'Morango',e:'🍓'},
+  {n:'Açaí',e:'🍇'},
+  {n:'Chocolate',e:'🍫'},
+];
+
+const GELATO_SABORES = [
+  {n:'Ninho Trufado',     e:'🍦'},
+  {n:'Ninho c/ Pistache', e:'🟢'},
+  {n:'Oreo',              e:'🖤'},
+  {n:'Flocos',            e:'✨'},
+  {n:'Choco Belga',       e:'🍫'},
+  {n:'Delicia de Abacaxi',e:'🍍'},
+  {n:'Unicornio',         e:'🦄'},
+  {n:'Brownie',           e:'🟫'},
+  {n:'Pistache',          e:'🟩'},
+  {n:'Tapioca',           e:'⚪'},
+];
+
+const GELATO_TAMANHOS = [
+  {tam:'300ml', preco:16, label:'Pequeno', limite:4},
+  {tam:'500ml', preco:25, label:'Médio',   limite:5},
+  {tam:'750ml', preco:33, label:'Grande',  limite:6},
+  {tam:'1kg',   preco:45, label:'Mega',    limite:99},
 ];
 
 /* ── ESTADO ── */
-let S = { categoria:'', tam:'', preco:0, limite:0, tipo:'Fit', creme:'', mix:[], comAcai:false, gelatoNome:'', gelatoPreco:0 };
+let S = {
+  categoria:'', tam:'', preco:0, limite:0, tipo:'Fit',
+  creme:'', mix:[], gelatoNome:'', gelatoTam:'', cobertura:'',
+  // açaí + gelato combo
+  comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:''
+};
 
 /* ── CARRINHO ── */
 let cart = [];
 
-function addToCart(item){
-  cart.push(item);
-  updateCartUI();
-}
-
-function removeFromCart(idx){
-  cart.splice(idx,1);
-  updateCartUI();
-}
+function addToCart(item){ cart.push(item); updateCartUI(); }
+function removeFromCart(idx){ cart.splice(idx,1); updateCartUI(); }
 
 function updateCartUI(){
   const count = cart.length;
   const total = cart.reduce((s,i)=>s+i.preco,0);
-
   document.querySelectorAll('.cart-badge').forEach(b=>{
-    b.textContent = count;
-    b.style.display = count>0?'flex':'none';
+    b.textContent=count; b.style.display=count>0?'flex':'none';
   });
-
-  const el = document.getElementById('cartTotal');
-  if(el) el.textContent = 'R$ '+total+',00';
-
-  const list = document.getElementById('cartList');
+  const el=document.getElementById('cartTotal');
+  if(el) el.textContent='R$ '+total+',00';
+  const list=document.getElementById('cartList');
   if(!list) return;
   list.innerHTML='';
-  if(count===0){
-    list.innerHTML='<p class="cart-empty">Seu carrinho esta vazio 🛒</p>';
-    return;
-  }
+  if(count===0){ list.innerHTML='<p class="cart-empty">Seu carrinho está vazio 🛒</p>'; return; }
   cart.forEach((item,idx)=>{
     const div=document.createElement('div'); div.className='cart-item';
     div.innerHTML=`
@@ -78,8 +88,7 @@ function updateCartUI(){
       <div class="ci-right">
         <span class="ci-preco">R$ ${item.preco},00</span>
         <button class="ci-rem" onclick="removeFromCart(${idx})" title="Remover">&#x2715;</button>
-      </div>
-    `;
+      </div>`;
     list.appendChild(div);
   });
 }
@@ -95,135 +104,80 @@ function fecharCarrinho(){
   document.body.style.overflow='';
 }
 
-/* ── BANNER ── */
-(function(){
-  const track=document.getElementById('bannerTrack');
-  const dotsEl=document.getElementById('bannerDots');
-  const prev=document.getElementById('bannerPrev');
-  const next=document.getElementById('bannerNext');
-  let cur=0, tot=0, timer=null, busy=false;
-
-  const extras=['/posts/post2.jpg','/posts/post3.jpg','/posts/post4.jpg','/posts/post5.jpg','/posts/post6.jpg'];
-  let loaded=0, extraSlides=[];
-  extras.forEach(s=>{
-    const i=new Image();
-    i.onload=()=>{ extraSlides.push(s); check(); };
-    i.onerror=check;
-    i.src=s;
-  });
-  function check(){ if(++loaded===extras.length) addExtras(); }
-
-  function addExtras(){
-    extraSlides.forEach(s=>{
-      const d=document.createElement('div'); d.className='banner-slide';
-      const img=document.createElement('img'); img.src=s; img.alt=''; img.loading='lazy';
-      d.appendChild(img); track.appendChild(d);
-    });
-    init();
-  }
-  setTimeout(()=>{ if(!tot) init(); }, 800);
-
-  function init(){
-    if(tot) return;
-    tot=track.children.length;
-    dotsEl.innerHTML='';
-    if(tot<=1){ prev.style.display='none'; next.style.display='none'; return; }
-    for(let i=0;i<tot;i++){
-      const b=document.createElement('button'); b.className='banner-dot'+(i===0?' on':'');
-      b.setAttribute('aria-label','Slide '+(i+1));
-      b.addEventListener('click',()=>go(i)); dotsEl.appendChild(b);
-    }
-    start();
-  }
-
-  function go(i){
-    if(busy||i===cur)return; busy=true;
-    cur=(i+tot)%tot;
-    track.style.transform='translateX(-'+cur*100+'%)';
-    dotsEl.querySelectorAll('.banner-dot').forEach((d,j)=>d.classList.toggle('on',j===cur));
-    setTimeout(()=>busy=false,550);
-  }
-  function start(){ clearInterval(timer); timer=setInterval(()=>go(cur+1),4500); }
-  prev.addEventListener('click',()=>{go(cur-1);start();});
-  next.addEventListener('click',()=>{go(cur+1);start();});
-  track.parentElement.addEventListener('mouseenter',()=>clearInterval(timer));
-  track.parentElement.addEventListener('mouseleave',start);
-  let tx=0;
-  track.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
-  track.addEventListener('touchend',e=>{
-    const d=tx-e.changedTouches[0].clientX;
-    if(Math.abs(d)>40){go(cur+(d>0?1:-1));start();}
-  });
-})();
-
 /* ── TABS ── */
 function mudarTab(tab, btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('ativo'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('ativo'));
   btn.classList.add('ativo');
   document.getElementById('tab-'+tab).classList.add('ativo');
-  if(tab==='gelato' && !document.getElementById('gridGelatos').children.length){
-    buildGelatos();
-  }
+  if(tab==='gelato' && !document.getElementById('gridGelatos').children.length) buildGelatos();
 }
 
+/* ── GELATO TAB: mostra tamanhos de copo ── */
 function buildGelatos(){
   const g=document.getElementById('gridGelatos');
-  GELATOS.forEach(gl=>{
+  GELATO_TAMANHOS.forEach(gt=>{
     const card=document.createElement('button');
-    card.className='card-gelato';
-    card.innerHTML=`<div class="cg-icon">${gl.e}</div>
-      <div class="cg-info">
-        <div class="cg-nome">${gl.n}</div>
-        <div class="cg-preco">R$ ${gl.preco}</div>
-        <span class="cg-btn-text">Montar &rarr;</span>
-      </div>`;
-    card.addEventListener('click',()=>abrirModalGelato(gl));
+    card.className='card-tamanho';
+    const cupClass = {300:'ct-sm',500:'ct-md',750:'ct-lg',1:'ct-xl'}[parseInt(gt.tam)] || 'ct-md';
+    card.innerHTML=`
+      <div class="ct-label">${gt.label}</div>
+      <div class="ct-cup ${cupClass}"><div class="cup-liquid"><div class="cup-top"></div></div></div>
+      <div class="ct-vol">${gt.tam.replace('ml','')}<span>${gt.tam.includes('kg')?'kg':'ml'}</span></div>
+      <div class="ct-price">R$<strong>${gt.preco}</strong></div>
+      <div class="ct-info">${gt.limite>=99?'Mix à vontade':gt.limite+' complementos'}</div>
+      <div class="ct-btn">Montar</div>`;
+    card.addEventListener('click',()=>abrirModalGelato(gt));
     g.appendChild(card);
   });
 }
 
-/* ── MODAL ACAI ── */
+/* ── MODAL AÇAÍ ── */
 function abrirModal(cat, tam, preco, limite){
-  S = { categoria:cat, tam, preco, limite, tipo:'Fit', creme:'', mix:[], comAcai:false, gelatoNome:'', gelatoPreco:0 };
+  S = { categoria:cat, tam, preco, limite, tipo:'Fit', creme:'', mix:[],
+        gelatoNome:'', gelatoTam:'', cobertura:'',
+        comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'' };
 
   const icons={'300ml':'🥤','500ml':'🍇','750ml':'🍨','1kg':'👑'};
-  document.getElementById('mIcon').textContent = icons[tam]||'🍇';
-  document.getElementById('mTitulo').textContent = 'Acai '+tam;
-  const ilimitado = limite>=99;
-  document.getElementById('mSub').textContent = tam+' · R$ '+preco+(ilimitado?' · a vontade':' · '+limite+' complementos');
+  document.getElementById('mIcon').textContent=icons[tam]||'🍇';
+  document.getElementById('mTitulo').textContent='Açaí '+tam;
+  const ilimitado=limite>=99;
+  document.getElementById('mSub').textContent=tam+' · R$ '+preco+(ilimitado?' · à vontade':' · '+limite+' complementos');
   document.getElementById('mTotal').textContent='R$ '+preco;
 
   const corpo=document.getElementById('modalCorpo');
   corpo.innerHTML='';
 
-  /* bloco tipo */
-  corpo.appendChild(criarBloco('Tipo de Acai','',`
+  /* tipo */
+  corpo.appendChild(criarBloco('Tipo de Açaí','',`
     <div class="tipos-row">
       <button class="chip-tipo" data-v="Premium" onclick="escolherTipo(this)"><span>👑</span>Premium</button>
       <button class="chip-tipo ativo" data-v="Fit" onclick="escolherTipo(this)"><span>💪</span>Fit</button>
       <button class="chip-tipo" data-v="Tradicional" onclick="escolherTipo(this)"><span>⭐</span>Tradicional</button>
-    </div>
-  `));
+    </div>`));
 
-  /* bloco: quer gelato? */
-  const pergDiv=document.createElement('div'); pergDiv.className='pergunta-row'; pergDiv.id='pergRowAcai';
-  ['Sim, quero Gelato','Nao, sem Gelato'].forEach((txt,i)=>{
-    const b=document.createElement('button'); b.className='chip-perg'+(i===1?' ativo':''); b.dataset.v=i===0?'sim':'nao';
+  /* combinar com gelato */
+  const blocoG=document.createElement('div'); blocoG.className='bloco';
+  const tG=document.createElement('div'); tG.className='bloco-titulo'; tG.textContent='Combinar com Gelato?';
+  blocoG.appendChild(tG);
+
+  const pergDiv=document.createElement('div'); pergDiv.className='pergunta-row';
+  ['Sim, quero Gelato','Não, obrigado'].forEach((txt,i)=>{
+    const b=document.createElement('button');
+    b.className='chip-perg'+(i===1?' ativo':''); b.dataset.v=i===0?'sim':'nao';
     b.textContent=txt;
     b.addEventListener('click',()=>{
-      S.comAcai=b.dataset.v==='sim';
+      S.comGelatoExtra=b.dataset.v==='sim';
       pergDiv.querySelectorAll('.chip-perg').forEach(x=>x.classList.toggle('ativo',x===b));
-      renderGelatoSelector(corpo, S.comAcai);
+      renderSaborGelatoAcai(corpo, S.comGelatoExtra);
       atualizarBarra();
     });
     pergDiv.appendChild(b);
   });
-  const blocoG=document.createElement('div'); blocoG.className='bloco';
-  const tG=document.createElement('div'); tG.className='bloco-titulo'; tG.textContent='Adicionar Gelato?';
-  blocoG.appendChild(tG); blocoG.appendChild(pergDiv); corpo.appendChild(blocoG);
+  blocoG.appendChild(pergDiv);
+  corpo.appendChild(blocoG);
 
-  /* bloco creme */
+  /* creme */
   const cremesDiv=document.createElement('div'); cremesDiv.className='chips-wrap'; cremesDiv.id='cremesWrap';
   CREMES.forEach(c=>{
     const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
@@ -238,38 +192,15 @@ function abrirModal(cat, tam, preco, limite){
   const tC=document.createElement('div'); tC.className='bloco-titulo'; tC.innerHTML='Creme <span class="obrig">(escolha 1)</span>';
   blocoC.appendChild(tC); blocoC.appendChild(cremesDiv); corpo.appendChild(blocoC);
 
-  /* bloco mix */
+  /* mix */
   if(ilimitado){
     const blocoMix=document.createElement('div'); blocoMix.className='bloco';
     const tM=document.createElement('div'); tM.className='bloco-titulo'; tM.textContent='Complementos';
     const aviso=document.createElement('div'); aviso.className='aviso-vontade';
-    aviso.textContent='🎉 A vontade! Escolha o que quiser e informe nas observacoes';
+    aviso.textContent='🎉 À vontade! Informe nas observações';
     blocoMix.appendChild(tM); blocoMix.appendChild(aviso); corpo.appendChild(blocoMix);
   } else {
-    const mixDiv=document.createElement('div'); mixDiv.className='chips-mix'; mixDiv.id='mixWrap';
-    const ct=document.createElement('span'); ct.className='contagem'; ct.id='contagem'; ct.textContent='0 / '+limite;
-    const tM=document.createElement('div'); tM.className='bloco-titulo';
-    tM.innerHTML='Complementos'; tM.appendChild(ct);
-    MIX.forEach(m=>{
-      const b=document.createElement('button'); b.className='chip-mix';
-      b.innerHTML='<em>'+m.e+'</em>'+m.n; b.dataset.v=m.n;
-      b.addEventListener('click',()=>{
-        if(b.classList.contains('ativo')){ S.mix=S.mix.filter(x=>x!==m.n); b.classList.remove('ativo'); }
-        else {
-          if(S.mix.length>=S.limite){ toast('Limite de '+S.limite+' complementos'); return; }
-          S.mix.push(m.n); b.classList.add('ativo');
-        }
-        ct.textContent=S.mix.length+' / '+S.limite;
-        ct.classList.toggle('cheio',S.mix.length>=S.limite);
-        mixDiv.querySelectorAll('.chip-mix:not(.ativo)').forEach(x=>{
-          const off=S.mix.length>=S.limite; x.disabled=off; x.toggleAttribute('disabled',off);
-        });
-        atualizarBarra();
-      });
-      mixDiv.appendChild(b);
-    });
-    const blocoM=document.createElement('div'); blocoM.className='bloco';
-    blocoM.appendChild(tM); blocoM.appendChild(mixDiv); corpo.appendChild(blocoM);
+    corpo.appendChild(criarBlocoMix('mixWrap', limite));
   }
 
   corpo.appendChild(criarBlocoObs());
@@ -278,129 +209,104 @@ function abrirModal(cat, tam, preco, limite){
   document.body.style.overflow='hidden';
 }
 
-/* Gelato selector dentro do modal de acai */
-function renderGelatoSelector(corpo, mostrar){
-  const existing=document.getElementById('blocoGelatoSelect');
+/* selector de sabor de gelato dentro do modal açaí */
+function renderSaborGelatoAcai(corpo, mostrar){
+  const existing=document.getElementById('blocoSaborGelatoAcai');
   if(existing) existing.remove();
-  S.gelatoNome=''; S.gelatoPreco=0;
-  document.getElementById('mTotal').textContent='R$ '+S.preco;
+  S.gelatoExtraNome=''; S.gelatoExtraEmoji='';
   if(!mostrar) return;
 
-  const blocoGS=document.createElement('div'); blocoGS.className='bloco'; blocoGS.id='blocoGelatoSelect';
-  const tGS=document.createElement('div'); tGS.className='bloco-titulo'; tGS.innerHTML='Escolha o Gelato <span class="obrig">(escolha 1)</span>';
-  blocoGS.appendChild(tGS);
+  const bloco=document.createElement('div'); bloco.className='bloco'; bloco.id='blocoSaborGelatoAcai';
+  const t=document.createElement('div'); t.className='bloco-titulo'; t.innerHTML='Sabor do Gelato <span class="obrig">(escolha 1)</span>';
+  bloco.appendChild(t);
 
-  const grid=document.createElement('div'); grid.className='gelato-select-grid';
-  GELATOS.forEach(gl=>{
-    const b=document.createElement('button'); b.className='chip-gelato-sel'; b.dataset.v=gl.n;
-    b.innerHTML=`<em>${gl.e}</em>${gl.n}<span class="gsel-preco">+R$${gl.preco}</span>`;
+  const grid=document.createElement('div'); grid.className='chips-sabores-grid';
+  GELATO_SABORES.forEach(gl=>{
+    const b=document.createElement('button'); b.className='chip-sabor-gelato'; b.dataset.v=gl.n;
+    b.innerHTML=`<em>${gl.e}</em><span>${gl.n}</span>`;
     b.addEventListener('click',()=>{
-      if(S.gelatoNome===gl.n){
-        S.gelatoNome=''; S.gelatoPreco=0;
-        b.classList.remove('ativo');
-      } else {
-        S.gelatoNome=gl.n; S.gelatoPreco=gl.preco;
-        grid.querySelectorAll('.chip-gelato-sel').forEach(x=>x.classList.toggle('ativo',x===b));
-      }
-      document.getElementById('mTotal').textContent='R$ '+(S.preco+S.gelatoPreco);
+      S.gelatoExtraNome=S.gelatoExtraNome===gl.n?'':(S.gelatoExtraNome=gl.n, gl.n);
+      S.gelatoExtraEmoji=gl.e;
+      grid.querySelectorAll('.chip-sabor-gelato').forEach(x=>x.classList.toggle('ativo',x===b&&S.gelatoExtraNome));
+      if(!S.gelatoExtraNome) S.gelatoExtraEmoji='';
       atualizarBarra();
     });
     grid.appendChild(b);
   });
-  blocoGS.appendChild(grid);
+  bloco.appendChild(grid);
 
+  // insert before creme bloco
   const cremesBloco=document.getElementById('cremesWrap')?.closest('.bloco');
-  if(cremesBloco) corpo.insertBefore(blocoGS, cremesBloco);
-  else corpo.appendChild(blocoGS);
+  if(cremesBloco) corpo.insertBefore(bloco, cremesBloco);
+  else corpo.appendChild(bloco);
 }
 
-/* ── MODAL GELATO ── */
-function abrirModalGelato(gl){
-  S = { categoria:'gelato', tam:'', preco:gl.preco, limite:0, tipo:'', creme:'', mix:[], comAcai:false, gelatoNome:gl.n, gelatoPreco:0 };
+/* ── MODAL GELATO (abre por tamanho) ── */
+function abrirModalGelato(gt){
+  S = { categoria:'gelato', tam:gt.tam, preco:gt.preco, limite:gt.limite,
+        tipo:'', creme:'', mix:[], gelatoNome:'', gelatoTam:gt.tam, cobertura:'',
+        comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'' };
 
-  document.getElementById('mIcon').textContent=gl.e;
-  document.getElementById('mTitulo').textContent='Gelato '+gl.n;
-  document.getElementById('mSub').textContent='R$ '+gl.preco;
-  document.getElementById('mTotal').textContent='R$ '+gl.preco;
+  document.getElementById('mIcon').textContent='🍨';
+  document.getElementById('mTitulo').textContent='Gelato '+gt.label+' '+gt.tam;
+  document.getElementById('mSub').textContent='R$ '+gt.preco+(gt.limite>=99?' · mix à vontade':' · '+gt.limite+' complementos');
+  document.getElementById('mTotal').textContent='R$ '+gt.preco;
 
   const corpo=document.getElementById('modalCorpo');
   corpo.innerHTML='';
 
-  const pergDiv=document.createElement('div'); pergDiv.className='pergunta-row'; pergDiv.id='pergRow';
-  ['Sim, com Acai','Nao, apenas Gelato'].forEach((txt,i)=>{
-    const b=document.createElement('button'); b.className='chip-perg'+(i===1?' ativo':''); b.dataset.v=i===0?'sim':'nao';
-    b.textContent=txt;
+  /* sabor */
+  const blocoS=document.createElement('div'); blocoS.className='bloco';
+  const tS=document.createElement('div'); tS.className='bloco-titulo'; tS.innerHTML='Sabor <span class="obrig">(escolha 1)</span>';
+  blocoS.appendChild(tS);
+  const gridS=document.createElement('div'); gridS.className='chips-sabores-grid';
+  GELATO_SABORES.forEach(gl=>{
+    const b=document.createElement('button'); b.className='chip-sabor-gelato'; b.dataset.v=gl.n;
+    b.innerHTML=`<em>${gl.e}</em><span>${gl.n}</span>`;
     b.addEventListener('click',()=>{
-      S.comAcai=b.dataset.v==='sim';
-      pergDiv.querySelectorAll('.chip-perg').forEach(x=>x.classList.toggle('ativo',x===b));
-      renderCamposGelato(corpo, S.comAcai);
+      S.gelatoNome=S.gelatoNome===gl.n?'':gl.n;
+      gridS.querySelectorAll('.chip-sabor-gelato').forEach(x=>x.classList.toggle('ativo',x===b&&S.gelatoNome));
+      if(!S.gelatoNome) S.gelatoNome='';
       atualizarBarra();
     });
-    pergDiv.appendChild(b);
+    gridS.appendChild(b);
   });
-  const blocoP=document.createElement('div'); blocoP.className='bloco';
-  const tP=document.createElement('div'); tP.className='bloco-titulo'; tP.textContent='Misturar com Acai?';
-  blocoP.appendChild(tP); blocoP.appendChild(pergDiv); corpo.appendChild(blocoP);
+  blocoS.appendChild(gridS);
+  corpo.appendChild(blocoS);
 
-  renderCamposGelato(corpo, false);
+  /* cobertura */
+  const cobDiv=document.createElement('div'); cobDiv.className='chips-wrap'; cobDiv.id='coberturaWrap';
+  GELATO_COBERTURAS.forEach(c=>{
+    const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
+    b.addEventListener('click',()=>{
+      S.cobertura=S.cobertura===c.n?'':c.n;
+      cobDiv.querySelectorAll('.chip-creme').forEach(x=>x.classList.toggle('ativo',x.dataset.v===S.cobertura));
+      atualizarBarra();
+    });
+    cobDiv.appendChild(b);
+  });
+  const blocoC=document.createElement('div'); blocoC.className='bloco';
+  const tC=document.createElement('div'); tC.className='bloco-titulo'; tC.innerHTML='Cobertura <span class="obrig">(escolha 1)</span>';
+  blocoC.appendChild(tC); blocoC.appendChild(cobDiv); corpo.appendChild(blocoC);
 
+  /* mix */
+  if(gt.limite>=99){
+    const blocoMix=document.createElement('div'); blocoMix.className='bloco';
+    const tM=document.createElement('div'); tM.className='bloco-titulo'; tM.textContent='Complementos';
+    const aviso=document.createElement('div'); aviso.className='aviso-vontade';
+    aviso.textContent='🎉 À vontade! Informe nas observações';
+    blocoMix.appendChild(tM); blocoMix.appendChild(aviso); corpo.appendChild(blocoMix);
+  } else {
+    corpo.appendChild(criarBlocoMix('mixWrapG', gt.limite));
+  }
+
+  corpo.appendChild(criarBlocoObs());
   document.getElementById('mBarra').style.width='0%';
   document.getElementById('modalBg').classList.add('aberto');
   document.body.style.overflow='hidden';
 }
 
-function renderCamposGelato(corpo, comAcai){
-  ['blocoCremeG','blocoMixG','blocoObs'].forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
-
-  if(comAcai){
-    S.comAcai=true;
-    const cremesDiv=document.createElement('div'); cremesDiv.className='chips-wrap'; cremesDiv.id='cremesWrapG';
-    CREMES.forEach(c=>{
-      const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
-      b.addEventListener('click',()=>{
-        S.creme=S.creme===c.n?'':c.n;
-        cremesDiv.querySelectorAll('.chip-creme').forEach(x=>x.classList.toggle('ativo',x.dataset.v===S.creme));
-        atualizarBarra();
-      });
-      cremesDiv.appendChild(b);
-    });
-    const blocoC=document.createElement('div'); blocoC.className='bloco'; blocoC.id='blocoCremeG';
-    const tC=document.createElement('div'); tC.className='bloco-titulo'; tC.innerHTML='Creme do Acai <span class="obrig">(escolha 1)</span>';
-    blocoC.appendChild(tC); blocoC.appendChild(cremesDiv); corpo.appendChild(blocoC);
-
-    S.limite=5; S.mix=[];
-    const mixDiv=document.createElement('div'); mixDiv.className='chips-mix'; mixDiv.id='mixWrapG';
-    const ct=document.createElement('span'); ct.className='contagem'; ct.id='contagem'; ct.textContent='0 / 5';
-    const tM=document.createElement('div'); tM.className='bloco-titulo'; tM.innerHTML='Complementos'; tM.appendChild(ct);
-    MIX.forEach(m=>{
-      const b=document.createElement('button'); b.className='chip-mix';
-      b.innerHTML='<em>'+m.e+'</em>'+m.n; b.dataset.v=m.n;
-      b.addEventListener('click',()=>{
-        if(b.classList.contains('ativo')){ S.mix=S.mix.filter(x=>x!==m.n); b.classList.remove('ativo'); }
-        else {
-          if(S.mix.length>=5){ toast('Limite de 5 complementos'); return; }
-          S.mix.push(m.n); b.classList.add('ativo');
-        }
-        ct.textContent=S.mix.length+' / 5';
-        ct.classList.toggle('cheio',S.mix.length>=5);
-        mixDiv.querySelectorAll('.chip-mix:not(.ativo)').forEach(x=>{
-          const off=S.mix.length>=5; x.disabled=off; x.toggleAttribute('disabled',off);
-        });
-        atualizarBarra();
-      });
-      mixDiv.appendChild(b);
-    });
-    const blocoM=document.createElement('div'); blocoM.className='bloco'; blocoM.id='blocoMixG';
-    blocoM.appendChild(tM); blocoM.appendChild(mixDiv); corpo.appendChild(blocoM);
-  } else {
-    S.comAcai=false; S.creme=''; S.mix=[];
-  }
-
-  /* UMA unica caixa de observacoes */
-  corpo.appendChild(criarBlocoObs());
-}
-
-/* helpers */
+/* ── helpers ── */
 function criarBloco(titulo, obrig, innerHtml){
   const b=document.createElement('div'); b.className='bloco';
   const t=document.createElement('div'); t.className='bloco-titulo';
@@ -409,35 +315,62 @@ function criarBloco(titulo, obrig, innerHtml){
   return b;
 }
 
+function criarBlocoMix(wrapId, limite){
+  const mixDiv=document.createElement('div'); mixDiv.className='chips-mix'; mixDiv.id=wrapId;
+  const ct=document.createElement('span'); ct.className='contagem'; ct.id='contagem'; ct.textContent='0 / '+limite;
+  const tM=document.createElement('div'); tM.className='bloco-titulo';
+  tM.innerHTML='Complementos'; tM.appendChild(ct);
+  MIX.forEach(m=>{
+    const b=document.createElement('button'); b.className='chip-mix';
+    b.innerHTML='<em>'+m.e+'</em>'+m.n; b.dataset.v=m.n;
+    b.addEventListener('click',()=>{
+      if(b.classList.contains('ativo')){ S.mix=S.mix.filter(x=>x!==m.n); b.classList.remove('ativo'); }
+      else {
+        if(S.mix.length>=limite){ toast('Limite de '+limite+' complementos'); return; }
+        S.mix.push(m.n); b.classList.add('ativo');
+      }
+      ct.textContent=S.mix.length+' / '+limite;
+      ct.classList.toggle('cheio',S.mix.length>=limite);
+      mixDiv.querySelectorAll('.chip-mix:not(.ativo)').forEach(x=>{
+        const off=S.mix.length>=limite; x.disabled=off; x.toggleAttribute('disabled',off);
+      });
+      atualizarBarra();
+    });
+    mixDiv.appendChild(b);
+  });
+  const blocoM=document.createElement('div'); blocoM.className='bloco';
+  blocoM.appendChild(tM); blocoM.appendChild(mixDiv);
+  return blocoM;
+}
+
 function criarBlocoObs(){
   const b=document.createElement('div'); b.className='bloco'; b.id='blocoObs';
   const t=document.createElement('div'); t.className='bloco-titulo';
-  t.innerHTML='Observacoes <span class="obrig">(opcional)</span>';
+  t.innerHTML='Observações <span class="obrig">(opcional)</span>';
   const ta=document.createElement('textarea'); ta.id='obsInput'; ta.placeholder='Ex: sem granola, bem gelado...';
   b.appendChild(t); b.appendChild(ta); return b;
 }
 
-/* ── TIPO ACAI ── */
 function escolherTipo(btn){
   S.tipo=btn.dataset.v;
   document.querySelectorAll('.chip-tipo').forEach(b=>b.classList.toggle('ativo',b===btn));
   atualizarBarra();
 }
 
-/* ── BARRA PROGRESSO ── */
 function atualizarBarra(){
   let itens;
   if(S.categoria==='gelato'){
-    itens=[true, S.comAcai ? !!S.creme : true, S.comAcai ? S.mix.length>0 : true, true];
+    const ilimitado=S.limite>=99;
+    itens=[!!S.gelatoNome, !!S.cobertura, ilimitado||S.mix.length>0, true];
   } else {
     const ilimitado=S.limite>=99;
-    itens=[!!S.tipo, !!S.creme, ilimitado||S.mix.length>0, true];
+    const gelatoOk=!S.comGelatoExtra || !!S.gelatoExtraNome;
+    itens=[!!S.tipo, gelatoOk, !!S.creme, ilimitado||S.mix.length>0];
   }
   const n=itens.filter(Boolean).length;
   document.getElementById('mBarra').style.width=(n/4*100)+'%';
 }
 
-/* ── FECHAR MODAL ── */
 function fecharModal(e, force){
   if(force||(e&&e.target===document.getElementById('modalBg'))){
     document.getElementById('modalBg').classList.remove('aberto');
@@ -451,39 +384,40 @@ function adicionarAoCarrinho(){
   const obs=document.getElementById('obsInput')?.value.trim()||'';
 
   if(S.categoria==='gelato'){
-    if(S.comAcai && !S.creme){ toast('Escolha um creme para o acai'); return; }
-    const det=S.comAcai
-      ? 'Com Acai · Creme: '+S.creme+(S.mix.length?' · '+S.mix.join(', '):'')
-      : 'Apenas Gelato';
+    if(!S.gelatoNome){ toast('Escolha o sabor do gelato'); return; }
+    if(!S.cobertura){ toast('Escolha uma cobertura'); return; }
+    if(!S.mix.length && S.limite<99){ toast('Adicione pelo menos 1 complemento'); return; }
+    const ilimitado=S.limite>=99;
     addToCart({
-      tipo:'gelato', nome:'Gelato '+S.gelatoNome,
-      detalhe: det+(obs?' · '+obs:''),
+      tipo:'gelato',
+      nome:`Gelato ${S.gelatoNome} ${S.gelatoTam}`,
+      detalhe:`Cobertura: ${S.cobertura} · ${ilimitado?'Mix à vontade':S.mix.join(', ')}${obs?' · '+obs:''}`,
       preco: S.preco
     });
   } else {
-    if(!S.creme){ toast('Escolha um creme antes de continuar'); return; }
+    if(S.comGelatoExtra && !S.gelatoExtraNome){ toast('Escolha o sabor do gelato'); return; }
+    if(!S.creme){ toast('Escolha um creme'); return; }
     const ilimitado=S.limite>=99;
     if(!ilimitado&&!S.mix.length){ toast('Adicione pelo menos 1 complemento'); return; }
-    const gelatoExtra = S.comAcai && S.gelatoNome ? ' + Gelato '+S.gelatoNome : '';
+    const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
     addToCart({
-      tipo:'acai', nome:'Acai '+S.tipo+' '+S.tam+gelatoExtra,
-      detalhe: 'Creme: '+S.creme+' · '+(ilimitado?'Complementos a vontade':S.mix.join(', '))+(obs?' · '+obs:''),
-      preco: S.preco+S.gelatoPreco
+      tipo:'acai',
+      nome:`Açaí ${S.tipo} ${S.tam}${gelatoSufixo}`,
+      detalhe:`Creme: ${S.creme} · ${ilimitado?'Complementos à vontade':S.mix.join(', ')}${obs?' · '+obs:''}`,
+      preco: S.preco
     });
   }
-
   fecharModal(null,true);
   toast('Item adicionado ao carrinho! 🛒');
 }
 
-/* ── FINALIZAR PEDIDO (do carrinho) ── */
+/* ── FINALIZAR ── */
 function finalizarPedido(){
   if(cart.length===0){ toast('Adicione itens ao carrinho primeiro'); return; }
   fecharCarrinho();
   abrirCheckout();
 }
 
-/* ── CHECKOUT ── */
 function abrirCheckout(){
   document.getElementById('checkoutBg').classList.add('aberto');
   document.body.style.overflow='hidden';
@@ -503,38 +437,40 @@ function renderCheckoutResumo(){
     <div class="checkout-item">
       <span>${i.nome}</span>
       <span>R$ ${i.preco},00</span>
-    </div>
-  `).join('')+`<div class="checkout-total-row"><strong>Total</strong><strong>R$ ${total},00</strong></div>`;
+    </div>`).join('')+`<div class="checkout-total-row"><strong>Total</strong><strong>R$ ${total},00</strong></div>`;
 }
 
 function enviarPedidoWhatsApp(){
   const nome=document.getElementById('inputNome')?.value.trim();
   const tel=document.getElementById('inputTel')?.value.trim();
-  const end=document.getElementById('inputEnd')?.value.trim();
+  const rua=document.getElementById('inputRua')?.value.trim();
+  const numero=document.getElementById('inputNumero')?.value.trim();
+  const bairro=document.getElementById('inputBairro')?.value.trim();
   const pag=document.querySelector('input[name="pagamento"]:checked')?.value;
 
   if(!nome){ toast('Informe seu nome'); return; }
-  if(!tel){ toast('Informe seu numero'); return; }
-  if(!end){ toast('Informe seu endereco'); return; }
+  if(!tel){ toast('Informe seu número'); return; }
+  if(!rua){ toast('Informe a rua'); return; }
+  if(!numero){ toast('Informe o número'); return; }
+  if(!bairro){ toast('Informe o bairro'); return; }
   if(!pag){ toast('Escolha a forma de pagamento'); return; }
 
+  const endCompleto=`${rua}, ${numero} — ${bairro}`;
   const total=cart.reduce((s,i)=>s+i.preco,0);
   const itensTexto=cart.map(i=>'• '+i.nome+'\n  '+i.detalhe+'\n  R$ '+i.preco+',00').join('\n\n');
 
   const linhas=[
-    '🍇 *Ola! Novo pedido:*','',
+    '🍇 *Olá! Novo pedido:*','',
     itensTexto,'',
     '*Total:* R$ '+total+',00','',
     '*Nome:* '+nome,
     '*Telefone:* '+tel,
-    '*Endereco:* '+end,
+    '*Endereço:* '+endCompleto,
     '*Pagamento:* '+pag,'',
-    '📲 Aguardo confirmacao!'
+    '📲 Aguardo confirmação!'
   ];
 
-  cart=[];
-  updateCartUI();
-  fecharCheckout();
+  cart=[]; updateCartUI(); fecharCheckout();
   toast('Pedido enviado! 🎉');
   window.open('https://wa.me/5585994101173?text='+encodeURIComponent(linhas.join('\n')),'_blank');
 }

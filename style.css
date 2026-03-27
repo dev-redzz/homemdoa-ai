@@ -785,3 +785,99 @@ footer {
   .grid-gelatos { grid-template-columns: repeat(4,1fr); }
   .banner-section { height: 38vw; max-height: 520px; }
 }
+
+/* ── GELATO TAMANHO GRID ── */
+.gelato-tam-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+.chip-gelato-tam {
+  background: var(--bg2);
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 14px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all .2s;
+}
+.chip-gelato-tam:hover { border-color: var(--prim); }
+.chip-gelato-tam.ativo { border-color: var(--prim); background: var(--prim-lt, #f3e8ff); }
+.chip-gelato-tam .gt-label { font-size: .75rem; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.chip-gelato-tam .gt-vol { font-size: 1.05rem; font-weight: 800; color: var(--text); }
+.chip-gelato-tam .gt-preco { font-size: .9rem; font-weight: 700; color: var(--prim); }
+
+/* ── FOOTER ADDRESS ── */
+.footer-endereco {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 6px;
+}
+.end-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.end-item strong { font-size: .9rem; color: var(--text); }
+.end-item span { font-size: .82rem; color: var(--text2); }
+.end-mapa {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--prim);
+  text-decoration: none;
+  letter-spacing: .02em;
+}
+.end-mapa:hover { text-decoration: underline; }
+
+/* ── REMOVE card-destaque special styles if needed ── */
+.card-tamanho .ct-ribbon { display: none; }
+
+/* ── GELATO SABORES GRID (no modal) ── */
+.chips-sabores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.chip-sabor-gelato {
+  background: var(--bg2);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 10px 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transition: all .2s;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.2;
+}
+.chip-sabor-gelato em {
+  font-style: normal;
+  font-size: 1.4rem;
+}
+.chip-sabor-gelato:hover { border-color: var(--prim); }
+.chip-sabor-gelato.ativo {
+  border-color: var(--prim);
+  background: var(--prim-lt, #f3e8ff);
+  color: var(--prim);
+}
+
+/* ── CHECKOUT CAMPOS ROW ── */
+.campos-row {
+  display: flex;
+  gap: 10px;
+}
+.campo-sm { flex: 0 0 90px; }
+.campo-lg { flex: 1; }
