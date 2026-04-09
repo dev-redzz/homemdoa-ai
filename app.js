@@ -6,6 +6,12 @@ const CREMES = [
   {n:'Paçoquita',e:'🥜'},{n:'Energético',e:'⚡'},
 ];
 
+const CALDAS = [
+  {n:'Calda Morango',e:'🍓'},{n:'Leite Condensado',e:'🥛'},
+  {n:'Mel',e:'🍯'},{n:'Calda Chocolate',e:'🍫'},
+  {n:'Calda Caramelo',e:'🍮'},{n:'Calda de Ninho',e:'🥛'},
+];
+
 const MIX = [
   {n:"MM's",e:'🍬'},{n:'Flocos de Arroz',e:'🌾'},{n:'Chocopower',e:'🍫'},
   {n:'Gotas de Choc.',e:'💧'},{n:'Granola',e:'🌰'},{n:'Sucrilhos',e:'🌽'},
@@ -56,8 +62,9 @@ const GELATO_TAMANHOS = [
 let S = {
   categoria:'', tam:'', preco:0, limite:0, tipo:'Fit',
   creme:'', mix:[], gelatoNome:'', gelatoTam:'', cobertura:'',
-  // açaí + gelato combo
-  comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:''
+  comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'',
+  gramAcai:500, gramCreme:300, gramCalda:200,
+  caldaSelecionada:'', cremeSelecionado:''
 };
 
 /* ── CARRINHO ── */
@@ -115,7 +122,7 @@ function mudarTab(tab, btn){
   if(tab==='gelato' && !document.getElementById('gridGelatos').children.length) buildGelatos();
 }
 
-/* ── GELATO TAB: mostra tamanhos de copo ── */
+/* ── GELATO TAB ── */
 function buildGelatos(){
   const g=document.getElementById('gridGelatos');
   GELATO_TAMANHOS.forEach(gt=>{
@@ -138,13 +145,15 @@ function buildGelatos(){
 function abrirModal(cat, tam, preco, limite){
   S = { categoria:cat, tam, preco, limite, tipo:'Fit', creme:'', mix:[],
         gelatoNome:'', gelatoTam:'', cobertura:'',
-        comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'' };
+        comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'',
+        gramAcai:500, gramCreme:300, gramCalda:200,
+        caldaSelecionada:'', cremeSelecionado:'' };
 
   const icons={'300ml':'🥤','500ml':'🍇','750ml':'🍨','1kg':'👑'};
   document.getElementById('mIcon').textContent=icons[tam]||'🍇';
   document.getElementById('mTitulo').textContent='Açaí '+tam;
   const ilimitado=limite>=99;
-  document.getElementById('mSub').textContent=tam+' · R$ '+preco+(ilimitado?' · à vontade':' · '+limite+' complementos');
+  document.getElementById('mSub').textContent=tam+' · R$ '+preco+(ilimitado?' · Monte por gramas':' · '+limite+' complementos');
   document.getElementById('mTotal').textContent='R$ '+preco;
 
   const corpo=document.getElementById('modalCorpo');
@@ -162,7 +171,6 @@ function abrirModal(cat, tam, preco, limite){
   const blocoG=document.createElement('div'); blocoG.className='bloco';
   const tG=document.createElement('div'); tG.className='bloco-titulo'; tG.textContent='Combinar com Gelato?';
   blocoG.appendChild(tG);
-
   const pergDiv=document.createElement('div'); pergDiv.className='pergunta-row';
   ['Sim, quero Gelato','Não, obrigado'].forEach((txt,i)=>{
     const b=document.createElement('button');
@@ -179,25 +187,28 @@ function abrirModal(cat, tam, preco, limite){
   blocoG.appendChild(pergDiv);
   corpo.appendChild(blocoG);
 
-  /* creme */
-  const cremesDiv=document.createElement('div'); cremesDiv.className='chips-wrap'; cremesDiv.id='cremesWrap';
-  CREMES.forEach(c=>{
-    const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
-    b.addEventListener('click',()=>{
-      S.creme=S.creme===c.n?'':c.n;
-      cremesDiv.querySelectorAll('.chip-creme').forEach(x=>x.classList.toggle('ativo',x.dataset.v===S.creme));
-      atualizarBarra();
-    });
-    cremesDiv.appendChild(b);
-  });
-  const blocoC=document.createElement('div'); blocoC.className='bloco';
-  const tC=document.createElement('div'); tC.className='bloco-titulo'; tC.innerHTML='Creme <span class="obrig">(escolha 1)</span>';
-  blocoC.appendChild(tC); blocoC.appendChild(cremesDiv); corpo.appendChild(blocoC);
-
-  /* mix */
   if(ilimitado){
+    /* ══════════ 1KG: SLIDERS POR GRAMAS ══════════ */
+    corpo.appendChild(criarBlocoSliderAcai());
+    corpo.appendChild(criarBlocoSliderCreme());
+    corpo.appendChild(criarBlocoSliderCalda());
+    corpo.appendChild(criarBarraTotal1kg());
     corpo.appendChild(criarBlocoMixIlimitado('mixWrap'));
   } else {
+    /* creme (não-1kg) */
+    const cremesDiv=document.createElement('div'); cremesDiv.className='chips-wrap'; cremesDiv.id='cremesWrap';
+    CREMES.forEach(c=>{
+      const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
+      b.addEventListener('click',()=>{
+        S.creme=S.creme===c.n?'':c.n;
+        cremesDiv.querySelectorAll('.chip-creme').forEach(x=>x.classList.toggle('ativo',x.dataset.v===S.creme));
+        atualizarBarra();
+      });
+      cremesDiv.appendChild(b);
+    });
+    const blocoC=document.createElement('div'); blocoC.className='bloco';
+    const tC=document.createElement('div'); tC.className='bloco-titulo'; tC.innerHTML='Creme <span class="obrig">(escolha 1)</span>';
+    blocoC.appendChild(tC); blocoC.appendChild(cremesDiv); corpo.appendChild(blocoC);
     corpo.appendChild(criarBlocoMix('mixWrap', limite));
   }
 
@@ -207,7 +218,151 @@ function abrirModal(cat, tam, preco, limite){
   document.body.style.overflow='hidden';
 }
 
-/* selector de sabor de gelato dentro do modal açaí */
+/* ══════════ 1KG SLIDER BUILDERS ══════════ */
+
+function criarBlocoSliderAcai(){
+  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider';
+  bloco.innerHTML=`
+    <div class="bloco-titulo">🍇 Quantidade de Açaí</div>
+    <div class="slider-card">
+      <div class="slider-display">
+        <span class="slider-value" id="valAcai">${S.gramAcai}</span>
+        <span class="slider-unit">g</span>
+      </div>
+      <input type="range" class="gram-slider slider-acai" id="sliderAcai"
+        min="100" max="1000" step="50" value="${S.gramAcai}"/>
+      <div class="slider-limits"><span>100g</span><span>1000g</span></div>
+    </div>`;
+  const sl=bloco.querySelector('#sliderAcai');
+  const vl=bloco.querySelector('#valAcai');
+  sl.addEventListener('input',()=>{ S.gramAcai=+sl.value; vl.textContent=S.gramAcai; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); atualizarBarra(); });
+  setTimeout(()=>atualizarSliderTrack(sl),10);
+  return bloco;
+}
+
+function criarBlocoSliderCreme(){
+  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider';
+  bloco.innerHTML=`
+    <div class="bloco-titulo">🥛 Creme e Quantidade</div>
+    <div class="chips-wrap" id="cremesWrap1kg"></div>
+    <div class="slider-card">
+      <div class="slider-display">
+        <span class="slider-value" id="valCreme">${S.gramCreme}</span>
+        <span class="slider-unit">g</span>
+      </div>
+      <input type="range" class="gram-slider slider-creme" id="sliderCreme"
+        min="100" max="1000" step="50" value="${S.gramCreme}"/>
+      <div class="slider-limits"><span>100g</span><span>1000g</span></div>
+    </div>`;
+  const wrap=bloco.querySelector('#cremesWrap1kg');
+  CREMES.forEach(c=>{
+    const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
+    b.addEventListener('click',()=>{
+      S.cremeSelecionado=S.cremeSelecionado===c.n?'':c.n;
+      S.creme=S.cremeSelecionado;
+      wrap.querySelectorAll('.chip-creme').forEach(x=>x.classList.toggle('ativo',x.dataset.v===S.cremeSelecionado));
+      atualizarBarra();
+    });
+    wrap.appendChild(b);
+  });
+  const sl=bloco.querySelector('#sliderCreme');
+  const vl=bloco.querySelector('#valCreme');
+  sl.addEventListener('input',()=>{ S.gramCreme=+sl.value; vl.textContent=S.gramCreme; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); atualizarBarra(); });
+  setTimeout(()=>atualizarSliderTrack(sl),10);
+  return bloco;
+}
+
+function criarBlocoSliderCalda(){
+  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider';
+  bloco.innerHTML=`
+    <div class="bloco-titulo">🍯 Calda e Quantidade</div>
+    <div class="chips-wrap" id="caldasWrap1kg"></div>
+    <div class="slider-card">
+      <div class="slider-display">
+        <span class="slider-value" id="valCalda">${S.gramCalda}</span>
+        <span class="slider-unit">g</span>
+      </div>
+      <input type="range" class="gram-slider slider-calda" id="sliderCalda"
+        min="100" max="1000" step="50" value="${S.gramCalda}"/>
+      <div class="slider-limits"><span>100g</span><span>1000g</span></div>
+    </div>`;
+  const wrap=bloco.querySelector('#caldasWrap1kg');
+  CALDAS.forEach(c=>{
+    const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
+    b.addEventListener('click',()=>{
+      S.caldaSelecionada=S.caldaSelecionada===c.n?'':c.n;
+      wrap.querySelectorAll('.chip-creme').forEach(x=>x.classList.toggle('ativo',x.dataset.v===S.caldaSelecionada));
+      atualizarBarra();
+    });
+    wrap.appendChild(b);
+  });
+  const sl=bloco.querySelector('#sliderCalda');
+  const vl=bloco.querySelector('#valCalda');
+  sl.addEventListener('input',()=>{ S.gramCalda=+sl.value; vl.textContent=S.gramCalda; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); atualizarBarra(); });
+  setTimeout(()=>atualizarSliderTrack(sl),10);
+  return bloco;
+}
+
+function criarBarraTotal1kg(){
+  const bloco=document.createElement('div'); bloco.className='bloco'; bloco.id='blocoTotal1kg';
+  bloco.innerHTML=`
+    <div class="total-gram-card" id="totalGramCard">
+      <div class="total-gram-header">
+        <span class="total-gram-label">Total na Composição</span>
+        <span class="total-gram-value" id="totalGramValue">1000g</span>
+      </div>
+      <div class="total-gram-bar-bg">
+        <div class="total-gram-bar-fill total-gram-bar-acai" id="barAcai"></div>
+        <div class="total-gram-bar-fill total-gram-bar-creme" id="barCreme"></div>
+        <div class="total-gram-bar-fill total-gram-bar-calda" id="barCalda"></div>
+      </div>
+      <div class="total-gram-legend">
+        <span class="legend-item"><span class="legend-dot dot-acai"></span>Açaí</span>
+        <span class="legend-item"><span class="legend-dot dot-creme"></span>Creme</span>
+        <span class="legend-item"><span class="legend-dot dot-calda"></span>Calda</span>
+      </div>
+      <div class="total-gram-status" id="totalGramStatus"></div>
+    </div>`;
+  setTimeout(()=>atualizarBarraTotal1kg(),20);
+  return bloco;
+}
+
+function atualizarBarraTotal1kg(){
+  const total=S.gramAcai+S.gramCreme+S.gramCalda;
+  const valEl=document.getElementById('totalGramValue');
+  const statusEl=document.getElementById('totalGramStatus');
+  const barA=document.getElementById('barAcai');
+  const barCr=document.getElementById('barCreme');
+  const barCa=document.getElementById('barCalda');
+  const card=document.getElementById('totalGramCard');
+  if(!valEl) return;
+
+  valEl.textContent=total+'g';
+  const maxVis=Math.max(total,1000);
+  barA.style.width=(S.gramAcai/maxVis*100)+'%';
+  barCr.style.width=(S.gramCreme/maxVis*100)+'%';
+  barCa.style.width=(S.gramCalda/maxVis*100)+'%';
+
+  card.classList.remove('total-over','total-under','total-ok');
+  if(total===1000){
+    statusEl.textContent='✅ Perfeito! Exatamente 1kg';
+    card.classList.add('total-ok');
+  } else if(total>1000){
+    statusEl.textContent='⚠️ Acima de 1kg ('+total+'g)';
+    card.classList.add('total-over');
+  } else {
+    statusEl.textContent='ℹ️ Faltam '+(1000-total)+'g para 1kg';
+    card.classList.add('total-under');
+  }
+}
+
+function atualizarSliderTrack(slider){
+  const min=+slider.min, max=+slider.max, val=+slider.value;
+  const pct=((val-min)/(max-min))*100;
+  slider.style.setProperty('--pct', pct+'%');
+}
+
+/* ── GELATO DENTRO DO AÇAÍ ── */
 function renderSaborGelatoAcai(corpo, mostrar){
   const existing=document.getElementById('blocoSaborGelatoAcai');
   if(existing) existing.remove();
@@ -217,7 +372,6 @@ function renderSaborGelatoAcai(corpo, mostrar){
   const bloco=document.createElement('div'); bloco.className='bloco'; bloco.id='blocoSaborGelatoAcai';
   const t=document.createElement('div'); t.className='bloco-titulo'; t.innerHTML='Sabor do Gelato <span class="obrig">(escolha 1)</span>';
   bloco.appendChild(t);
-
   const grid=document.createElement('div'); grid.className='chips-sabores-grid';
   GELATO_SABORES.forEach(gl=>{
     const b=document.createElement('button'); b.className='chip-sabor-gelato'; b.dataset.v=gl.n;
@@ -232,18 +386,18 @@ function renderSaborGelatoAcai(corpo, mostrar){
     grid.appendChild(b);
   });
   bloco.appendChild(grid);
-
-  // insert before creme bloco
-  const cremesBloco=document.getElementById('cremesWrap')?.closest('.bloco');
-  if(cremesBloco) corpo.insertBefore(bloco, cremesBloco);
+  const ref=document.getElementById('cremesWrap')?.closest('.bloco') || document.querySelector('.bloco-slider');
+  if(ref) corpo.insertBefore(bloco, ref);
   else corpo.appendChild(bloco);
 }
 
-/* ── MODAL GELATO (abre por tamanho) ── */
+/* ── MODAL GELATO ── */
 function abrirModalGelato(gt){
   S = { categoria:'gelato', tam:gt.tam, preco:gt.preco, limite:gt.limite,
         tipo:'', creme:'', mix:[], gelatoNome:'', gelatoTam:gt.tam, cobertura:'',
-        comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'' };
+        comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'',
+        gramAcai:500, gramCreme:300, gramCalda:200,
+        caldaSelecionada:'', cremeSelecionado:'' };
 
   document.getElementById('mIcon').textContent='🍨';
   document.getElementById('mTitulo').textContent='Gelato '+gt.label+' '+gt.tam;
@@ -253,7 +407,6 @@ function abrirModalGelato(gt){
   const corpo=document.getElementById('modalCorpo');
   corpo.innerHTML='';
 
-  /* sabor */
   const blocoS=document.createElement('div'); blocoS.className='bloco';
   const tS=document.createElement('div'); tS.className='bloco-titulo'; tS.innerHTML='Sabor <span class="obrig">(escolha 1)</span>';
   blocoS.appendChild(tS);
@@ -272,7 +425,6 @@ function abrirModalGelato(gt){
   blocoS.appendChild(gridS);
   corpo.appendChild(blocoS);
 
-  /* cobertura */
   const cobDiv=document.createElement('div'); cobDiv.className='chips-wrap'; cobDiv.id='coberturaWrap';
   GELATO_COBERTURAS.forEach(c=>{
     const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
@@ -287,12 +439,8 @@ function abrirModalGelato(gt){
   const tC=document.createElement('div'); tC.className='bloco-titulo'; tC.innerHTML='Cobertura <span class="obrig">(escolha 1)</span>';
   blocoC.appendChild(tC); blocoC.appendChild(cobDiv); corpo.appendChild(blocoC);
 
-  /* mix */
-  if(gt.limite>=99){
-    corpo.appendChild(criarBlocoMixIlimitado('mixWrapG'));
-  } else {
-    corpo.appendChild(criarBlocoMix('mixWrapG', gt.limite));
-  }
+  if(gt.limite>=99) corpo.appendChild(criarBlocoMixIlimitado('mixWrapG'));
+  else corpo.appendChild(criarBlocoMix('mixWrapG', gt.limite));
 
   corpo.appendChild(criarBlocoObs(gt.limite>=99));
   document.getElementById('mBarra').style.width='0%';
@@ -300,7 +448,7 @@ function abrirModalGelato(gt){
   document.body.style.overflow='hidden';
 }
 
-/* ── helpers ── */
+/* ── HELPERS ── */
 function criarBloco(titulo, obrig, innerHtml){
   const b=document.createElement('div'); b.className='bloco';
   const t=document.createElement('div'); t.className='bloco-titulo';
@@ -341,7 +489,7 @@ function criarBlocoMixIlimitado(wrapId){
   const mixDiv=document.createElement('div'); mixDiv.className='chips-mix'; mixDiv.id=wrapId;
   const badge=document.createElement('span'); badge.className='contagem'; badge.id='contagem'; badge.textContent='🎉 À vontade';
   const tM=document.createElement('div'); tM.className='bloco-titulo';
-  tM.innerHTML='Complementos'; tM.appendChild(badge);
+  tM.innerHTML='Mix <span class="obrig">(à vontade)</span>'; tM.appendChild(badge);
   MIX.forEach(m=>{
     const b=document.createElement('button'); b.className='chip-mix';
     b.innerHTML='<em>'+m.e+'</em>'+m.n; b.dataset.v=m.n;
@@ -358,24 +506,14 @@ function criarBlocoMixIlimitado(wrapId){
   return blocoM;
 }
 
-
 function criarBlocoObs(ilimitado){
   const b=document.createElement('div'); b.className='bloco'; b.id='blocoObs';
   const t=document.createElement('div'); t.className='bloco-titulo';
   t.innerHTML='Observações <span class="obrig">(opcional)</span>';
-
-  if(ilimitado){
-    const dica=document.createElement('div'); dica.className='obs-dica-vontade';
-    dica.innerHTML='<strong>✏️ Como personalizar seu pedido 1kg:</strong><br>'
-      +'Informe aqui a <strong>quantidade de açaí</strong> desejada, o <strong>creme</strong> que prefere e <strong>quais complementos / mix</strong> quer e em que quantidade. Os mix são <strong>à vontade</strong>, coloque o quanto quiser! 🎉';
-    b.appendChild(t); b.appendChild(dica);
-  } else {
-    b.appendChild(t);
-  }
-
+  b.appendChild(t);
   const ta=document.createElement('textarea'); ta.id='obsInput';
   ta.placeholder=ilimitado
-    ? 'Ex: mais açaí e menos creme, bastante granola e castanha, extra leite condensado...'
+    ? 'Ex: bem gelado, capricha no açaí, extra granola...'
     : 'Ex: sem granola, bem gelado, pouco creme...';
   b.appendChild(ta); return b;
 }
@@ -393,8 +531,13 @@ function atualizarBarra(){
     itens=[!!S.gelatoNome, !!S.cobertura, ilimitado||S.mix.length>0, true];
   } else {
     const ilimitado=S.limite>=99;
-    const gelatoOk=!S.comGelatoExtra || !!S.gelatoExtraNome;
-    itens=[!!S.tipo, gelatoOk, !!S.creme, ilimitado||S.mix.length>0];
+    if(ilimitado){
+      const gelatoOk=!S.comGelatoExtra || !!S.gelatoExtraNome;
+      itens=[!!S.tipo, gelatoOk, !!S.cremeSelecionado, true];
+    } else {
+      const gelatoOk=!S.comGelatoExtra || !!S.gelatoExtraNome;
+      itens=[!!S.tipo, gelatoOk, !!S.creme, S.mix.length>0];
+    }
   }
   const n=itens.filter(Boolean).length;
   document.getElementById('mBarra').style.width=(n/4*100)+'%';
@@ -425,16 +568,29 @@ function adicionarAoCarrinho(){
     });
   } else {
     if(S.comGelatoExtra && !S.gelatoExtraNome){ toast('Escolha o sabor do gelato'); return; }
-    if(!S.creme){ toast('Escolha um creme'); return; }
     const ilimitado=S.limite>=99;
-    if(!ilimitado&&!S.mix.length){ toast('Adicione pelo menos 1 complemento'); return; }
-    const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
-    addToCart({
-      tipo:'acai',
-      nome:`Açaí ${S.tipo} ${S.tam}${gelatoSufixo}`,
-      detalhe:`Creme: ${S.creme} · ${ilimitado?'Complementos à vontade':S.mix.join(', ')}${obs?' · '+obs:''}`,
-      preco: S.preco
-    });
+
+    if(ilimitado){
+      if(!S.cremeSelecionado){ toast('Escolha um creme'); return; }
+      const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
+      const caldaInfo=S.caldaSelecionada ? `Calda: ${S.caldaSelecionada} (${S.gramCalda}g)` : `Sem calda selecionada (${S.gramCalda}g)`;
+      addToCart({
+        tipo:'acai',
+        nome:`Açaí ${S.tipo} 1kg${gelatoSufixo}`,
+        detalhe:`Açaí: ${S.gramAcai}g · Creme: ${S.cremeSelecionado} (${S.gramCreme}g) · ${caldaInfo} · Mix: ${S.mix.length>0?S.mix.join(', '):'nenhum'}${obs?' · '+obs:''}`,
+        preco: S.preco
+      });
+    } else {
+      if(!S.creme){ toast('Escolha um creme'); return; }
+      if(!S.mix.length){ toast('Adicione pelo menos 1 complemento'); return; }
+      const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
+      addToCart({
+        tipo:'acai',
+        nome:`Açaí ${S.tipo} ${S.tam}${gelatoSufixo}`,
+        detalhe:`Creme: ${S.creme} · ${S.mix.join(', ')}${obs?' · '+obs:''}`,
+        preco: S.preco
+      });
+    }
   }
   fecharModal(null,true);
   toast('Item adicionado ao carrinho! 🛒');
@@ -446,7 +602,6 @@ function finalizarPedido(){
   fecharCarrinho();
   abrirCheckout();
 }
-
 function abrirCheckout(){
   document.getElementById('checkoutBg').classList.add('aberto');
   document.body.style.overflow='hidden';
@@ -457,7 +612,6 @@ function fecharCheckout(){
   if(bg) bg.classList.remove('aberto');
   document.body.style.overflow='';
 }
-
 function renderCheckoutResumo(){
   const el=document.getElementById('checkoutResumo');
   if(!el) return;
@@ -518,7 +672,7 @@ burger.addEventListener('click',()=>{ drawer.classList.toggle('open'); burger.cl
 function closeMenu(){ drawer.classList.remove('open'); burger.classList.remove('open'); }
 document.addEventListener('click',e=>{ if(!e.target.closest('#header')) closeMenu(); });
 
-/* ── TROCO: mostrar/ocultar campo ao selecionar Dinheiro ── */
+/* ── TROCO ── */
 document.addEventListener('change', e=>{
   if(e.target.name==='pagamento'){
     const trocoWrap=document.getElementById('trocoWrap');
