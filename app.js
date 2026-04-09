@@ -50,7 +50,7 @@ const PRECO_1KG_PROMO  = 39.90;
 
 function ehDiaPromocional(){
   const dia = new Date().getDay(); // 0=dom, 1=seg, 2=ter, 3=qua, 4=qui, 5=sex, 6=sab
-  return dia === 2 || dia === 5; // terça ou quinta
+  return dia === 2 || dia === 4; // terça ou quinta
 }
 
 function getPreco1kg(){
