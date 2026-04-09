@@ -1,4 +1,8 @@
-/* Homem do Açaí – app.js  (v2 — sem caldas, sliders diretos) */
+/* Homem do Açaí – app.js v4
+   - Preço 1kg calculado por gramas (R$49,90/1000g = R$0,0499/g)
+   - Terça e Quinta: preço promocional R$39,90/1000g = R$0,0399/g
+   - Visual dos sabores gelato no estilo chip-mix
+*/
 
 const CREMES = [
   {n:'Calda de Ninho',e:'🥛'},{n:'Cupuaçu',e:'🌿'},{n:'Maracujá',e:'🟡'},
@@ -39,6 +43,27 @@ const GELATO_TAMANHOS = [
   {tam:'750ml',preco:33,label:'Grande',limite:6},
   {tam:'1kg',preco:49.90,label:'Mega',limite:99},
 ];
+
+/* ── PREÇO POR GRAMA ── */
+const PRECO_1KG_NORMAL = 49.90;
+const PRECO_1KG_PROMO  = 39.90;
+
+function ehDiaPromocional(){
+  const dia = new Date().getDay(); // 0=dom, 1=seg, 2=ter, 3=qua, 4=qui, 5=sex, 6=sab
+  return dia === 2 || dia === 4; // terça ou quinta
+}
+
+function getPreco1kg(){
+  return ehDiaPromocional() ? PRECO_1KG_PROMO : PRECO_1KG_NORMAL;
+}
+
+function getPrecoPorGrama(){
+  return getPreco1kg() / 1000;
+}
+
+function calcularPreco1kg(totalGramas){
+  return Math.round(totalGramas * getPrecoPorGrama() * 100) / 100;
+}
 
 /* ── ESTADO ── */
 let S = {
@@ -105,11 +130,27 @@ function buildGelatos(){
   });
 }
 
+/* Helper: cria grid de sabores gelato no estilo chip-mix */
+function criarGridSabores(onSelect){
+  const grid=document.createElement('div'); grid.className='chips-mix';
+  GELATO_SABORES.forEach(gl=>{
+    const b=document.createElement('button'); b.className='chip-mix'; b.dataset.v=gl.n;
+    b.innerHTML='<em>'+gl.e+'</em>'+gl.n;
+    b.addEventListener('click',()=>onSelect(b,gl,grid));
+    grid.appendChild(b);
+  });
+  return grid;
+}
+
 /* ══════════════════════════════════
    MODAL AÇAÍ
    ══════════════════════════════════ */
 function abrirModal(cat, tam, preco, limite){
-  S={categoria:cat,tam,preco,limite,tipo:'Fit',creme:'',mix:[],
+  const ilimitado=limite>=99;
+  // Para 1kg, usar preço dinâmico
+  const precoBase = ilimitado ? getPreco1kg() : preco;
+
+  S={categoria:cat,tam,preco:precoBase,limite,tipo:'Fit',creme:'',mix:[],
      gelatoNome:'',gelatoTam:'',cobertura:'',
      comGelatoExtra:false,gelatoExtraNome:'',gelatoExtraEmoji:'',
      gramAcai:500,gramCreme:500,cremeSelecionado:''};
@@ -117,9 +158,17 @@ function abrirModal(cat, tam, preco, limite){
   const icons={'300ml':'🥤','500ml':'🍇','750ml':'🍨','1kg':'👑'};
   document.getElementById('mIcon').textContent=icons[tam]||'🍇';
   document.getElementById('mTitulo').textContent='Açaí '+tam;
-  const ilimitado=limite>=99;
-  document.getElementById('mSub').textContent=tam+' · '+fmtPreco(preco)+(ilimitado?' · Monte por gramas':' · '+limite+' complementos');
-  document.getElementById('mTotal').textContent=fmtPreco(preco);
+
+  if(ilimitado){
+    const promo = ehDiaPromocional();
+    let subText = tam+' · Monte por gramas';
+    if(promo) subText += ' · 🔥 PROMOÇÃO';
+    document.getElementById('mSub').textContent=subText;
+  } else {
+    document.getElementById('mSub').textContent=tam+' · '+fmtPreco(precoBase)+' · '+limite+' complementos';
+  }
+
+  document.getElementById('mTotal').textContent=fmtPreco(ilimitado ? calcularPreco1kg(S.gramAcai+S.gramCreme) : precoBase);
 
   const corpo=document.getElementById('modalCorpo');
   corpo.innerHTML='';
@@ -153,13 +202,17 @@ function abrirModal(cat, tam, preco, limite){
   corpo.appendChild(blocoG);
 
   if(ilimitado){
-    // ═══ 1KG: SLIDERS DIRETOS (Açaí + Creme) ═══
+    // ═══ 1KG: SLIDERS (Açaí + Creme) com preço dinâmico ═══
+    if(ehDiaPromocional()){
+      const promoDiv=document.createElement('div'); promoDiv.className='promo-banner';
+      promoDiv.innerHTML='🔥 <strong>Terça & Quinta:</strong> Açaí 1kg por apenas <strong>'+fmtPreco(PRECO_1KG_PROMO)+'</strong> o kg! <span>('+fmtPreco(getPrecoPorGrama()*100)+' cada 100g)</span>';
+      corpo.appendChild(promoDiv);
+    }
     corpo.appendChild(criarSliderAcai());
     corpo.appendChild(criarSliderCreme());
     corpo.appendChild(criarBarraTotal());
     corpo.appendChild(criarBlocoMixIlimitado('mixWrap'));
   } else {
-    // Creme (tamanhos menores)
     const cremesDiv=document.createElement('div'); cremesDiv.className='chips-wrap'; cremesDiv.id='cremesWrap';
     CREMES.forEach(c=>{
       const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
@@ -193,7 +246,7 @@ function criarSliderAcai(){
       <div class="slider-limits"><span>100g</span><span>1000g</span></div>
     </div>`;
   const sl=bl.querySelector('#sliderAcai'), vl=bl.querySelector('#valAcai');
-  sl.addEventListener('input',()=>{ S.gramAcai=+sl.value; vl.textContent=S.gramAcai; syncSlider(sl); atualizarTotal(); });
+  sl.addEventListener('input',()=>{ S.gramAcai=+sl.value; vl.textContent=S.gramAcai; syncSlider(sl); atualizarTotal(); atualizarPreco1kg(); });
   setTimeout(()=>syncSlider(sl),10);
   return bl;
 }
@@ -221,9 +274,17 @@ function criarSliderCreme(){
     wrap.appendChild(b);
   });
   const sl=bl.querySelector('#sliderCreme'), vl=bl.querySelector('#valCreme');
-  sl.addEventListener('input',()=>{ S.gramCreme=+sl.value; vl.textContent=S.gramCreme; syncSlider(sl); atualizarTotal(); });
+  sl.addEventListener('input',()=>{ S.gramCreme=+sl.value; vl.textContent=S.gramCreme; syncSlider(sl); atualizarTotal(); atualizarPreco1kg(); });
   setTimeout(()=>syncSlider(sl),10);
   return bl;
+}
+
+/* ═══ ATUALIZAR PREÇO 1KG em tempo real ═══ */
+function atualizarPreco1kg(){
+  const totalG = S.gramAcai + S.gramCreme;
+  const novoPreco = calcularPreco1kg(totalG);
+  S.preco = novoPreco;
+  document.getElementById('mTotal').textContent = fmtPreco(novoPreco);
 }
 
 /* ═══ BARRA TOTAL 1KG ═══ */
@@ -244,8 +305,9 @@ function criarBarraTotal(){
         <span class="legend-item"><span class="legend-dot dot-creme"></span>Creme</span>
       </div>
       <div class="total-gram-status" id="totalGramStatus"></div>
+      <div class="total-gram-preco" id="totalGramPreco"></div>
     </div>`;
-  setTimeout(()=>atualizarTotal(),20);
+  setTimeout(()=>{atualizarTotal();atualizarPreco1kg();},20);
   return bl;
 }
 
@@ -253,6 +315,7 @@ function atualizarTotal(){
   const total=S.gramAcai+S.gramCreme;
   const valEl=document.getElementById('totalGramValue');
   const statusEl=document.getElementById('totalGramStatus');
+  const precoEl=document.getElementById('totalGramPreco');
   const barA=document.getElementById('barAcai');
   const barCr=document.getElementById('barCreme');
   const card=document.getElementById('totalGramCard');
@@ -262,9 +325,24 @@ function atualizarTotal(){
   barA.style.width=(S.gramAcai/mx*100)+'%';
   barCr.style.width=(S.gramCreme/mx*100)+'%';
   card.classList.remove('total-over','total-under','total-ok');
-  if(total===1000){ statusEl.textContent='✅ Perfeito! Exatamente 1kg'; card.classList.add('total-ok'); }
-  else if(total>1000){ statusEl.textContent='⚠️ Acima de 1kg ('+total+'g)'; card.classList.add('total-over'); }
-  else { statusEl.textContent='ℹ️ Faltam '+(1000-total)+'g para 1kg'; card.classList.add('total-under'); }
+
+  const preco = calcularPreco1kg(total);
+  const promo = ehDiaPromocional();
+
+  if(total===1000){
+    statusEl.textContent='✅ Perfeito! Exatamente 1kg';
+    card.classList.add('total-ok');
+  } else if(total>1000){
+    statusEl.textContent='⚠️ Acima de 1kg ('+total+'g)';
+    card.classList.add('total-over');
+  } else {
+    statusEl.textContent='ℹ️ Faltam '+(1000-total)+'g para 1kg';
+    card.classList.add('total-under');
+  }
+
+  if(precoEl){
+    precoEl.innerHTML = '💰 Valor: <strong>'+fmtPreco(preco)+'</strong>' + (promo ? ' <span class="promo-tag">PROMO</span>' : '') + ' <span class="preco-detalhe">('+fmtPreco(getPrecoPorGrama()*100)+' / 100g)</span>';
+  }
 }
 
 function syncSlider(sl){
@@ -272,7 +350,7 @@ function syncSlider(sl){
   sl.style.setProperty('--pct',pct+'%');
 }
 
-/* ── Gelato dentro do Açaí ── */
+/* ── Gelato dentro do Açaí (chip-mix style) ── */
 function renderSaborGelatoAcai(corpo,mostrar){
   const ex=document.getElementById('blocoSaborGelatoAcai');
   if(ex) ex.remove();
@@ -281,18 +359,12 @@ function renderSaborGelatoAcai(corpo,mostrar){
   const bl=document.createElement('div'); bl.className='bloco'; bl.id='blocoSaborGelatoAcai';
   const t=document.createElement('div'); t.className='bloco-titulo'; t.innerHTML='Sabor do Gelato <span class="obrig">(escolha 1)</span>';
   bl.appendChild(t);
-  const grid=document.createElement('div'); grid.className='chips-sabores-grid';
-  GELATO_SABORES.forEach(gl=>{
-    const b=document.createElement('button'); b.className='chip-sabor-gelato'; b.dataset.v=gl.n;
-    b.innerHTML=`<em>${gl.e}</em><span>${gl.n}</span>`;
-    b.addEventListener('click',()=>{
-      S.gelatoExtraNome=S.gelatoExtraNome===gl.n?'':gl.n;
-      S.gelatoExtraEmoji=gl.e;
-      grid.querySelectorAll('.chip-sabor-gelato').forEach(x=>x.classList.toggle('ativo',x===b&&S.gelatoExtraNome));
-      if(!S.gelatoExtraNome) S.gelatoExtraEmoji='';
-      atualizarBarra();
-    });
-    grid.appendChild(b);
+  const grid=criarGridSabores((b,gl,g)=>{
+    S.gelatoExtraNome=S.gelatoExtraNome===gl.n?'':gl.n;
+    S.gelatoExtraEmoji=gl.e;
+    g.querySelectorAll('.chip-mix').forEach(x=>x.classList.toggle('ativo',x===b&&S.gelatoExtraNome));
+    if(!S.gelatoExtraNome) S.gelatoExtraEmoji='';
+    atualizarBarra();
   });
   bl.appendChild(grid);
   const ref=document.getElementById('cremesWrap')?.closest('.bloco')||document.querySelector('.bloco-slider');
@@ -313,20 +385,14 @@ function abrirModalGelato(gt){
   document.getElementById('mTotal').textContent=fmtPreco(gt.preco);
   const corpo=document.getElementById('modalCorpo'); corpo.innerHTML='';
 
-  // Sabor
+  // Sabor (chip-mix style)
   const blocoS=document.createElement('div'); blocoS.className='bloco';
   const tS=document.createElement('div'); tS.className='bloco-titulo'; tS.innerHTML='Sabor <span class="obrig">(escolha 1)</span>';
   blocoS.appendChild(tS);
-  const gridS=document.createElement('div'); gridS.className='chips-sabores-grid';
-  GELATO_SABORES.forEach(gl=>{
-    const b=document.createElement('button'); b.className='chip-sabor-gelato'; b.dataset.v=gl.n;
-    b.innerHTML=`<em>${gl.e}</em><span>${gl.n}</span>`;
-    b.addEventListener('click',()=>{
-      S.gelatoNome=S.gelatoNome===gl.n?'':gl.n;
-      gridS.querySelectorAll('.chip-sabor-gelato').forEach(x=>x.classList.toggle('ativo',x===b&&S.gelatoNome));
-      atualizarBarra();
-    });
-    gridS.appendChild(b);
+  const gridS=criarGridSabores((b,gl,g)=>{
+    S.gelatoNome=S.gelatoNome===gl.n?'':gl.n;
+    g.querySelectorAll('.chip-mix').forEach(x=>x.classList.toggle('ativo',x===b&&S.gelatoNome));
+    atualizarBarra();
   });
   blocoS.appendChild(gridS); corpo.appendChild(blocoS);
 
@@ -451,9 +517,12 @@ function adicionarAoCarrinho(){
     const ilimitado=S.limite>=99;
     if(ilimitado){
       if(!S.cremeSelecionado){toast('Escolha um creme');return;}
+      const totalG=S.gramAcai+S.gramCreme;
+      const precoFinal=calcularPreco1kg(totalG);
       const gs=S.comGelatoExtra&&S.gelatoExtraNome?` + Gelato ${S.gelatoExtraNome}`:'';
-      addToCart({tipo:'acai',nome:`Açaí ${S.tipo} 1kg${gs}`,
-        detalhe:`Açaí: ${S.gramAcai}g · Creme: ${S.cremeSelecionado} (${S.gramCreme}g) · Mix: ${S.mix.length?S.mix.join(', '):'nenhum'}${obs?' · '+obs:''}`,preco:S.preco});
+      const promo=ehDiaPromocional()?'(PROMO) ':'';
+      addToCart({tipo:'acai',nome:`${promo}Açaí ${S.tipo} ${totalG}g${gs}`,
+        detalhe:`Açaí: ${S.gramAcai}g · Creme: ${S.cremeSelecionado} (${S.gramCreme}g) · Mix: ${S.mix.length?S.mix.join(', '):'nenhum'}${obs?' · '+obs:''}`,preco:precoFinal});
     } else {
       if(!S.creme){toast('Escolha um creme');return;}
       if(!S.mix.length){toast('Adicione pelo menos 1 complemento');return;}
@@ -533,3 +602,17 @@ function toast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3000);
 }
+
+/* ── PROMO BADGE no card 1kg ── */
+document.addEventListener('DOMContentLoaded',()=>{
+  if(ehDiaPromocional()){
+    // Atualizar preço no card 1kg do açaí
+    const cardMega=document.querySelector('.card-mega');
+    if(cardMega){
+      const precoEl=cardMega.querySelector('.ct-price');
+      if(precoEl) precoEl.innerHTML='<del style="font-size:0.6rem;opacity:0.5">R$49,90</del> R$<strong>39,90</strong>';
+      const infoEl=cardMega.querySelector('.ct-info');
+      if(infoEl) infoEl.textContent='🔥 Promoção Ter & Qui';
+    }
+  }
+});

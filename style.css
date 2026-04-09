@@ -1563,3 +1563,34 @@ footer {
 .total-ok .total-gram-status { color: var(--verde-d); background: rgba(34,197,94,0.1); }
 .total-over .total-gram-status { color: #b45309; background: rgba(245,158,11,0.1); }
 .total-under .total-gram-status { color: var(--text-2); }
+
+/* Preço dentro da barra total */
+.total-gram-preco {
+  text-align: center; font-size: 0.82rem; font-weight: 700; margin-top: 6px;
+  color: var(--roxo);
+}
+.total-gram-preco strong {
+  font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+}
+.preco-detalhe { font-size: 0.68rem; color: var(--text-2); font-weight: 600; }
+.promo-tag {
+  display: inline-block; background: #ef4444; color: #fff;
+  font-size: 0.58rem; font-weight: 900; padding: 1px 6px;
+  border-radius: 4px; vertical-align: middle; margin-left: 4px;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+
+/* Banner de promoção */
+.promo-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1.5px solid #f59e0b;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  color: #92400e;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.5;
+}
+.promo-banner strong { color: #78350f; }
+.promo-banner span { font-size: 0.72rem; opacity: 0.8; }
