@@ -64,6 +64,7 @@ let S = {
   creme:'', mix:[], gelatoNome:'', gelatoTam:'', cobertura:'',
   comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'',
   gramAcai:500, gramCreme:300, gramCalda:200,
+  usaAcai:false, usaCreme:false, usaCalda:false,
   caldaSelecionada:'', cremeSelecionado:''
 };
 
@@ -147,6 +148,7 @@ function abrirModal(cat, tam, preco, limite){
         gelatoNome:'', gelatoTam:'', cobertura:'',
         comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'',
         gramAcai:500, gramCreme:300, gramCalda:200,
+        usaAcai:false, usaCreme:false, usaCalda:false,
         caldaSelecionada:'', cremeSelecionado:'' };
 
   const icons={'300ml':'🥤','500ml':'🍇','750ml':'🍨','1kg':'👑'};
@@ -218,42 +220,74 @@ function abrirModal(cat, tam, preco, limite){
   document.body.style.overflow='hidden';
 }
 
-/* ══════════ 1KG SLIDER BUILDERS ══════════ */
+/* ══════════ 1KG TOGGLE + SLIDER BUILDERS ══════════ */
 
 function criarBlocoSliderAcai(){
-  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider';
+  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider'; bloco.id='blocoSliderAcai';
   bloco.innerHTML=`
-    <div class="bloco-titulo">🍇 Quantidade de Açaí</div>
-    <div class="slider-card">
-      <div class="slider-display">
-        <span class="slider-value" id="valAcai">${S.gramAcai}</span>
-        <span class="slider-unit">g</span>
+    <div class="bloco-titulo">🍇 Açaí</div>
+    <button class="toggle-item-btn" id="btnToggleAcai">
+      <span class="toggle-icon">+</span>
+      <span>Quero açaí</span>
+    </button>
+    <div class="slider-reveal" id="revealAcai" style="display:none">
+      <div class="slider-card">
+        <div class="slider-display">
+          <span class="slider-value" id="valAcai">${S.gramAcai}</span>
+          <span class="slider-unit">g</span>
+        </div>
+        <input type="range" class="gram-slider slider-acai" id="sliderAcai"
+          min="100" max="1000" step="50" value="${S.gramAcai}"/>
+        <div class="slider-limits"><span>100g</span><span>1000g</span></div>
       </div>
-      <input type="range" class="gram-slider slider-acai" id="sliderAcai"
-        min="100" max="1000" step="50" value="${S.gramAcai}"/>
-      <div class="slider-limits"><span>100g</span><span>1000g</span></div>
     </div>`;
+  const btn=bloco.querySelector('#btnToggleAcai');
+  const reveal=bloco.querySelector('#revealAcai');
+  btn.addEventListener('click',()=>{
+    S.usaAcai=!S.usaAcai;
+    btn.classList.toggle('ativo',S.usaAcai);
+    btn.querySelector('.toggle-icon').textContent=S.usaAcai?'✓':'+';
+    reveal.style.display=S.usaAcai?'block':'none';
+    if(S.usaAcai){ const sl=bloco.querySelector('#sliderAcai'); setTimeout(()=>atualizarSliderTrack(sl),10); }
+    atualizarBarraTotal1kg(); atualizarBarra();
+  });
   const sl=bloco.querySelector('#sliderAcai');
   const vl=bloco.querySelector('#valAcai');
-  sl.addEventListener('input',()=>{ S.gramAcai=+sl.value; vl.textContent=S.gramAcai; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); atualizarBarra(); });
-  setTimeout(()=>atualizarSliderTrack(sl),10);
+  sl.addEventListener('input',()=>{ S.gramAcai=+sl.value; vl.textContent=S.gramAcai; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); });
   return bloco;
 }
 
 function criarBlocoSliderCreme(){
-  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider';
+  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider'; bloco.id='blocoSliderCreme';
   bloco.innerHTML=`
-    <div class="bloco-titulo">🥛 Creme e Quantidade</div>
-    <div class="chips-wrap" id="cremesWrap1kg"></div>
-    <div class="slider-card">
-      <div class="slider-display">
-        <span class="slider-value" id="valCreme">${S.gramCreme}</span>
-        <span class="slider-unit">g</span>
+    <div class="bloco-titulo">🥛 Creme</div>
+    <button class="toggle-item-btn" id="btnToggleCreme">
+      <span class="toggle-icon">+</span>
+      <span>Quero creme</span>
+    </button>
+    <div class="slider-reveal" id="revealCreme" style="display:none">
+      <div class="chips-wrap" id="cremesWrap1kg"></div>
+      <div class="slider-card">
+        <div class="slider-display">
+          <span class="slider-value" id="valCreme">${S.gramCreme}</span>
+          <span class="slider-unit">g</span>
+        </div>
+        <input type="range" class="gram-slider slider-creme" id="sliderCreme"
+          min="100" max="1000" step="50" value="${S.gramCreme}"/>
+        <div class="slider-limits"><span>100g</span><span>1000g</span></div>
       </div>
-      <input type="range" class="gram-slider slider-creme" id="sliderCreme"
-        min="100" max="1000" step="50" value="${S.gramCreme}"/>
-      <div class="slider-limits"><span>100g</span><span>1000g</span></div>
     </div>`;
+  const btn=bloco.querySelector('#btnToggleCreme');
+  const reveal=bloco.querySelector('#revealCreme');
+  btn.addEventListener('click',()=>{
+    S.usaCreme=!S.usaCreme;
+    btn.classList.toggle('ativo',S.usaCreme);
+    btn.querySelector('.toggle-icon').textContent=S.usaCreme?'✓':'+';
+    reveal.style.display=S.usaCreme?'block':'none';
+    if(!S.usaCreme){ S.cremeSelecionado=''; S.creme=''; }
+    if(S.usaCreme){ const sl=bloco.querySelector('#sliderCreme'); setTimeout(()=>atualizarSliderTrack(sl),10); }
+    atualizarBarraTotal1kg(); atualizarBarra();
+  });
   const wrap=bloco.querySelector('#cremesWrap1kg');
   CREMES.forEach(c=>{
     const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
@@ -267,25 +301,41 @@ function criarBlocoSliderCreme(){
   });
   const sl=bloco.querySelector('#sliderCreme');
   const vl=bloco.querySelector('#valCreme');
-  sl.addEventListener('input',()=>{ S.gramCreme=+sl.value; vl.textContent=S.gramCreme; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); atualizarBarra(); });
-  setTimeout(()=>atualizarSliderTrack(sl),10);
+  sl.addEventListener('input',()=>{ S.gramCreme=+sl.value; vl.textContent=S.gramCreme; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); });
   return bloco;
 }
 
 function criarBlocoSliderCalda(){
-  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider';
+  const bloco=document.createElement('div'); bloco.className='bloco bloco-slider'; bloco.id='blocoSliderCalda';
   bloco.innerHTML=`
-    <div class="bloco-titulo">🍯 Calda e Quantidade</div>
-    <div class="chips-wrap" id="caldasWrap1kg"></div>
-    <div class="slider-card">
-      <div class="slider-display">
-        <span class="slider-value" id="valCalda">${S.gramCalda}</span>
-        <span class="slider-unit">g</span>
+    <div class="bloco-titulo">🍯 Calda</div>
+    <button class="toggle-item-btn" id="btnToggleCalda">
+      <span class="toggle-icon">+</span>
+      <span>Quero calda</span>
+    </button>
+    <div class="slider-reveal" id="revealCalda" style="display:none">
+      <div class="chips-wrap" id="caldasWrap1kg"></div>
+      <div class="slider-card">
+        <div class="slider-display">
+          <span class="slider-value" id="valCalda">${S.gramCalda}</span>
+          <span class="slider-unit">g</span>
+        </div>
+        <input type="range" class="gram-slider slider-calda" id="sliderCalda"
+          min="100" max="1000" step="50" value="${S.gramCalda}"/>
+        <div class="slider-limits"><span>100g</span><span>1000g</span></div>
       </div>
-      <input type="range" class="gram-slider slider-calda" id="sliderCalda"
-        min="100" max="1000" step="50" value="${S.gramCalda}"/>
-      <div class="slider-limits"><span>100g</span><span>1000g</span></div>
     </div>`;
+  const btn=bloco.querySelector('#btnToggleCalda');
+  const reveal=bloco.querySelector('#revealCalda');
+  btn.addEventListener('click',()=>{
+    S.usaCalda=!S.usaCalda;
+    btn.classList.toggle('ativo',S.usaCalda);
+    btn.querySelector('.toggle-icon').textContent=S.usaCalda?'✓':'+';
+    reveal.style.display=S.usaCalda?'block':'none';
+    if(!S.usaCalda){ S.caldaSelecionada=''; }
+    if(S.usaCalda){ const sl=bloco.querySelector('#sliderCalda'); setTimeout(()=>atualizarSliderTrack(sl),10); }
+    atualizarBarraTotal1kg(); atualizarBarra();
+  });
   const wrap=bloco.querySelector('#caldasWrap1kg');
   CALDAS.forEach(c=>{
     const b=document.createElement('button'); b.className='chip-creme'; b.textContent=c.e+' '+c.n; b.dataset.v=c.n;
@@ -298,8 +348,7 @@ function criarBlocoSliderCalda(){
   });
   const sl=bloco.querySelector('#sliderCalda');
   const vl=bloco.querySelector('#valCalda');
-  sl.addEventListener('input',()=>{ S.gramCalda=+sl.value; vl.textContent=S.gramCalda; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); atualizarBarra(); });
-  setTimeout(()=>atualizarSliderTrack(sl),10);
+  sl.addEventListener('input',()=>{ S.gramCalda=+sl.value; vl.textContent=S.gramCalda; atualizarSliderTrack(sl); atualizarBarraTotal1kg(); });
   return bloco;
 }
 
@@ -328,7 +377,10 @@ function criarBarraTotal1kg(){
 }
 
 function atualizarBarraTotal1kg(){
-  const total=S.gramAcai+S.gramCreme+S.gramCalda;
+  const acaiG=S.usaAcai?S.gramAcai:0;
+  const cremeG=S.usaCreme?S.gramCreme:0;
+  const caldaG=S.usaCalda?S.gramCalda:0;
+  const total=acaiG+cremeG+caldaG;
   const valEl=document.getElementById('totalGramValue');
   const statusEl=document.getElementById('totalGramStatus');
   const barA=document.getElementById('barAcai');
@@ -339,12 +391,15 @@ function atualizarBarraTotal1kg(){
 
   valEl.textContent=total+'g';
   const maxVis=Math.max(total,1000);
-  barA.style.width=(S.gramAcai/maxVis*100)+'%';
-  barCr.style.width=(S.gramCreme/maxVis*100)+'%';
-  barCa.style.width=(S.gramCalda/maxVis*100)+'%';
+  barA.style.width=(acaiG/maxVis*100)+'%';
+  barCr.style.width=(cremeG/maxVis*100)+'%';
+  barCa.style.width=(caldaG/maxVis*100)+'%';
 
   card.classList.remove('total-over','total-under','total-ok');
-  if(total===1000){
+  if(total===0){
+    statusEl.textContent='👆 Selecione os itens acima';
+    card.classList.add('total-under');
+  } else if(total===1000){
     statusEl.textContent='✅ Perfeito! Exatamente 1kg';
     card.classList.add('total-ok');
   } else if(total>1000){
@@ -397,6 +452,7 @@ function abrirModalGelato(gt){
         tipo:'', creme:'', mix:[], gelatoNome:'', gelatoTam:gt.tam, cobertura:'',
         comGelatoExtra:false, gelatoExtraNome:'', gelatoExtraEmoji:'',
         gramAcai:500, gramCreme:300, gramCalda:200,
+        usaAcai:false, usaCreme:false, usaCalda:false,
         caldaSelecionada:'', cremeSelecionado:'' };
 
   document.getElementById('mIcon').textContent='🍨';
@@ -571,13 +627,19 @@ function adicionarAoCarrinho(){
     const ilimitado=S.limite>=99;
 
     if(ilimitado){
-      if(!S.cremeSelecionado){ toast('Escolha um creme'); return; }
+      if(!S.usaAcai && !S.usaCreme && !S.usaCalda){ toast('Selecione pelo menos açaí, creme ou calda'); return; }
+      if(S.usaCreme && !S.cremeSelecionado){ toast('Escolha o sabor do creme'); return; }
       const gelatoSufixo=S.comGelatoExtra && S.gelatoExtraNome ? ` + Gelato ${S.gelatoExtraNome}` : '';
-      const caldaInfo=S.caldaSelecionada ? `Calda: ${S.caldaSelecionada} (${S.gramCalda}g)` : `Sem calda selecionada (${S.gramCalda}g)`;
+      const partes=[];
+      if(S.usaAcai) partes.push(`Açaí: ${S.gramAcai}g`);
+      if(S.usaCreme) partes.push(`Creme: ${S.cremeSelecionado} (${S.gramCreme}g)`);
+      if(S.usaCalda && S.caldaSelecionada) partes.push(`Calda: ${S.caldaSelecionada} (${S.gramCalda}g)`);
+      else if(S.usaCalda) partes.push(`Calda: ${S.gramCalda}g`);
+      if(S.mix.length>0) partes.push(`Mix: ${S.mix.join(', ')}`);
       addToCart({
         tipo:'acai',
         nome:`Açaí ${S.tipo} 1kg${gelatoSufixo}`,
-        detalhe:`Açaí: ${S.gramAcai}g · Creme: ${S.cremeSelecionado} (${S.gramCreme}g) · ${caldaInfo} · Mix: ${S.mix.length>0?S.mix.join(', '):'nenhum'}${obs?' · '+obs:''}`,
+        detalhe: partes.join(' · ')+(obs?' · '+obs:''),
         preco: S.preco
       });
     } else {
