@@ -92,7 +92,10 @@ function updateCartUI(){
   if(!count){ list.innerHTML='<p class="cart-empty">Seu carrinho está vazio 🛒</p>'; return; }
   cart.forEach((item,idx)=>{
     const div=document.createElement('div'); div.className='cart-item';
-    div.innerHTML=`<div class="ci-info"><span class="ci-nome">${item.nome}</span><span class="ci-det">${item.detalhe}</span></div><div class="ci-right"><span class="ci-preco">${fmtPreco(item.preco)}</span><button class="ci-rem" onclick="removeFromCart(${idx})" title="Remover">&#x2715;</button></div>`;
+    // Formata detalhe em linhas separadas para melhor legibilidade
+    const detPartes = item.detalhe.split(' · ');
+    const detHtml = detPartes.map(p => '<span class="ci-det-line">'+p.trim()+'</span>').join('');
+    div.innerHTML=`<div class="ci-info"><span class="ci-nome">${item.nome}</span><div class="ci-det">${detHtml}</div></div><div class="ci-right"><span class="ci-preco">${fmtPreco(item.preco)}</span><button class="ci-rem" onclick="removeFromCart(${idx})" title="Remover">&#x2715;</button></div>`;
     list.appendChild(div);
   });
 }
@@ -569,9 +572,55 @@ function enviarPedidoWhatsApp(){
   if(!bairro){toast('Informe o bairro');return;}
   if(!pag){toast('Escolha a forma de pagamento');return;}
   const total=cart.reduce((s,i)=>s+i.preco,0);
-  const itensTexto=cart.map(i=>'• '+i.nome+'\n  '+i.detalhe+'\n  '+fmtPreco(i.preco)).join('\n\n');
-  const pagLine=pag==='Dinheiro'&&troco?`*Pagamento:* Dinheiro — troco para ${troco}`:pag==='Dinheiro'?'*Pagamento:* Dinheiro — sem troco':`*Pagamento:* ${pag}`;
-  const linhas=['🍇 *Olá! Novo pedido:*','',itensTexto,'','*Total:* '+fmtPreco(total),'','*Nome:* '+nome,'*Telefone:* '+tel,'*Endereço:* '+`${rua}, ${numero} — ${bairro}`,pagLine,'','📲 Aguardo confirmação!'];
+
+  // Monta itens numerados com detalhes organizados
+  const itensTexto=cart.map((item,i)=>{
+    const num=i+1;
+    let linha='*'+num+'.* '+item.nome+' — '+fmtPreco(item.preco);
+    // Quebra o detalhe em linhas mais legíveis
+    const partes=item.detalhe.split(' · ');
+    partes.forEach(p=>{
+      linha+='\n   ▸ '+p.trim();
+    });
+    return linha;
+  }).join('\n\n');
+
+  const pagLine=pag==='Dinheiro'&&troco
+    ?'💵 Dinheiro (troco p/ '+troco+')'
+    :pag==='Dinheiro'
+    ?'💵 Dinheiro (sem troco)'
+    :(pag==='Pix'?'⚡':'💳')+' '+pag;
+
+  const agora=new Date();
+  const hora=agora.getHours().toString().padStart(2,'0')+':'+agora.getMinutes().toString().padStart(2,'0');
+
+  const linhas=[
+    '╔══════════════════════╗',
+    '   🍇 *HOMEM DO AÇAÍ*',
+    '   _Novo Pedido_',
+    '╚══════════════════════╝',
+    '',
+    '📋 *ITENS DO PEDIDO*',
+    '━━━━━━━━━━━━━━━━━━',
+    itensTexto,
+    '',
+    '━━━━━━━━━━━━━━━━━━',
+    '💰 *TOTAL: '+fmtPreco(total)+'*',
+    '',
+    '👤 *DADOS DO CLIENTE*',
+    '━━━━━━━━━━━━━━━━━━',
+    '• Nome: '+nome,
+    '• Tel: '+tel,
+    '• End: '+rua+', '+numero+' — '+bairro,
+    '',
+    '💳 *PAGAMENTO*',
+    '━━━━━━━━━━━━━━━━━━',
+    '• '+pagLine,
+    '',
+    '🕐 Pedido feito às *'+hora+'*',
+    '',
+    '📲 _Aguardo confirmação!_ ✅'
+  ];
   cart=[]; updateCartUI(); fecharCheckout();
   toast('Pedido enviado! 🎉');
   window.open('https://wa.me/5585994101173?text='+encodeURIComponent(linhas.join('\n')),'_blank');
