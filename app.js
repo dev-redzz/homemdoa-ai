@@ -171,7 +171,7 @@ function abrirModal(cat, tam, preco, limite){
     document.getElementById('mSub').textContent=tam+' · '+fmtPreco(precoBase)+' · '+limite+' complementos';
   }
 
-  document.getElementById('mTotal').textContent=fmtPreco(ilimitado ? calcularPreco1kg(S.gramAcai+S.gramCreme) : precoBase);
+  document.getElementById('mTotal').textContent=fmtPreco(ilimitado ? calcularPreco1kg(S.gramAcai) : precoBase);
 
   const corpo=document.getElementById('modalCorpo');
   corpo.innerHTML='';
@@ -273,6 +273,8 @@ function criarSliderCreme(){
       S.creme=S.cremeSelecionado;
       wrap.querySelectorAll('.chip-creme').forEach(x=>x.classList.toggle('ativo',x.dataset.v===S.cremeSelecionado));
       atualizarBarra();
+      atualizarTotal();
+      atualizarPreco1kg();
     });
     wrap.appendChild(b);
   });
@@ -284,7 +286,8 @@ function criarSliderCreme(){
 
 /* ═══ ATUALIZAR PREÇO 1KG ═══ */
 function atualizarPreco1kg(){
-  const totalG = S.gramAcai + S.gramCreme;
+  const temCreme=!!S.cremeSelecionado;
+  const totalG = temCreme ? S.gramAcai + S.gramCreme : S.gramAcai;
   S.preco = calcularPreco1kg(totalG);
   document.getElementById('mTotal').textContent = fmtPreco(S.preco);
 }
@@ -314,7 +317,8 @@ function criarBarraTotal(){
 }
 
 function atualizarTotal(){
-  const total=S.gramAcai+S.gramCreme;
+  const temCreme=!!S.cremeSelecionado;
+  const total=temCreme ? S.gramAcai+S.gramCreme : S.gramAcai;
   const valEl=document.getElementById('totalGramValue');
   const statusEl=document.getElementById('totalGramStatus');
   const precoEl=document.getElementById('totalGramPreco');
@@ -325,7 +329,7 @@ function atualizarTotal(){
   valEl.textContent=total+'g';
   const mx=Math.max(total,1000);
   barA.style.width=(S.gramAcai/mx*100)+'%';
-  barCr.style.width=(S.gramCreme/mx*100)+'%';
+  barCr.style.width=(temCreme?(S.gramCreme/mx*100):0)+'%';
   card.classList.remove('total-over','total-under','total-ok');
 
   const preco = calcularPreco1kg(total);
@@ -517,11 +521,12 @@ function adicionarAoCarrinho(){
     if(S.comGelatoExtra&&!S.gelatoExtraNome){toast('Escolha o sabor do gelato');return;}
     const ilimitado=S.limite>=99;
     if(ilimitado){
-      const totalG=S.gramAcai+S.gramCreme;
+      const temCreme=!!S.cremeSelecionado;
+      const totalG=temCreme ? S.gramAcai+S.gramCreme : S.gramAcai;
       const precoFinal=calcularPreco1kg(totalG);
       const gs=S.comGelatoExtra&&S.gelatoExtraNome?` + Gelato ${S.gelatoExtraNome}`:'';
       const promo=ehDiaPromocional()?'(PROMO) ':'';
-      const cremeInfo=S.cremeSelecionado?`Creme: ${S.cremeSelecionado} (${S.gramCreme}g)`:`Creme: nenhum (${S.gramCreme}g)`;
+      const cremeInfo=temCreme?`Creme: ${S.cremeSelecionado} (${S.gramCreme}g)`:'Creme: nenhum';
       addToCart({tipo:'acai',nome:`${promo}Açaí ${S.tipo} ${totalG}g${gs}`,
         detalhe:`Açaí: ${S.gramAcai}g · ${cremeInfo} · Mix: ${S.mix.length?S.mix.join(', '):'nenhum'}${obs?' · Obs: '+obs:''}`,preco:precoFinal});
     } else {
