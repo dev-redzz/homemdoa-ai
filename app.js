@@ -39,9 +39,9 @@ const GELATO_SABORES = [
 ];
 
 const GELATO_TAMANHOS = [
-  {tam:'300ml',preco:16,label:'Pequeno',limite:4},
-  {tam:'500ml',preco:25,label:'Médio',limite:5},
-  {tam:'750ml',preco:33,label:'Grande',limite:6},
+  {tam:'300g',preco:16,label:'Pequeno',limite:4},
+  {tam:'500g',preco:25,label:'Médio',limite:5},
+  {tam:'750g',preco:33,label:'Grande',limite:6},
   {tam:'1kg',preco:49.90,label:'Mega',limite:99},
 ];
 
@@ -118,11 +118,15 @@ function buildGelatos(){
   GELATO_TAMANHOS.forEach((gt,i)=>{
     const card=document.createElement('button');
     const isMega=gt.limite>=99;
-    const isMedio=gt.tam==='500ml';
-    card.className='card-tamanho'+(isMedio?' card-destaque':'')+(isMega?' card-mega':'');
+    const isMedio=gt.tam==='500g';
+    card.className='card-tamanho'+(isMedio?' card-destaque':'');
     const cupClass=cupSizes[parseInt(gt.tam)]||'gc-md';
     const ribbonHtml=isMedio?'<div class="ct-ribbon ct-ribbon-gold">⭐ Mais Pedido</div>'
       :isMega?'<div class="ct-ribbon ct-ribbon-gold">🏆 Melhor Valor</div>':'';
+    // Extrair número e unidade corretamente
+    const isKg=gt.tam.includes('kg');
+    const volNum=isKg?gt.tam.replace('kg',''):gt.tam.replace('g','');
+    const volUnit=isKg?'kg':'g';
     card.innerHTML=`
       ${ribbonHtml}
       <div class="ct-label">${gt.label}</div>
@@ -132,7 +136,7 @@ function buildGelatos(){
         <div class="gc-cherry"></div>
         <div class="gc-body"></div>
       </div>
-      <div class="ct-vol">${gt.tam.replace('ml','')}<span>${gt.tam.includes('kg')?'kg':'ml'}</span></div>
+      <div class="ct-vol">${volNum}<span>${volUnit}</span></div>
       <div class="ct-price">R$<strong>${gt.preco}</strong></div>
       <div class="ct-info">${isMega?'Mix à vontade':gt.limite+' complementos'}</div>
       <div class="ct-btn">Montar</div>`;
@@ -165,7 +169,7 @@ function abrirModal(cat, tam, preco, limite){
      comGelatoExtra:false,gelatoExtraNome:'',gelatoExtraEmoji:'',
      gramAcai:500,gramCreme:500,cremeSelecionado:''};
 
-  const icons={'300ml':'🥤','500ml':'🍇','750ml':'🍨','1kg':'👑'};
+  const icons={'300g':'🥤','500g':'🍇','750g':'🍨','1kg':'👑'};
   document.getElementById('mIcon').textContent=icons[tam]||'🍇';
   document.getElementById('mTitulo').textContent='Açaí '+tam;
 

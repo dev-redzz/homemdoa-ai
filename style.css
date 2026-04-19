@@ -468,10 +468,6 @@ body {
     rgba(255,255,255,0.35) 5px, rgba(255,255,255,0.35) 6px
   );
 }
-.card-mega .gc-body {
-  background: linear-gradient(135deg, #3a0870 0%, #6b1aa0 100%);
-  border-color: rgba(255,225,53,0.3);
-}
 .gc-sm .gc-body { width: 34px; height: 34px; }
 .gc-md .gc-body { width: 42px; height: 42px; }
 .gc-lg .gc-body { width: 48px; height: 48px; }
@@ -488,9 +484,6 @@ body {
   background: linear-gradient(135deg, #c9f0d8, #9be0b8);
   z-index: 3;
 }
-.card-mega .gc-scoop-1 { background: linear-gradient(135deg, #e8c8f5, #d0a0e8); }
-.card-mega .gc-scoop-2 { background: linear-gradient(135deg, #ffeaa0, #ffd060); }
-
 .gc-sm .gc-scoop-1 { width: 30px; height: 18px; top: 8px; }
 .gc-sm .gc-scoop-2 { width: 24px; height: 14px; top: 2px; }
 .gc-md .gc-scoop-1 { width: 36px; height: 20px; top: 10px; }
