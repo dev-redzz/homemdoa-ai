@@ -111,25 +111,31 @@ function mudarTab(tab, btn){
   if(tab==='gelato' && !document.getElementById('gridGelatos').children.length) buildGelatos();
 }
 
-/* ── GELATO TAB — cards com visual de copo ── */
+/* ── GELATO TAB — cards iguais ao açaí com copo de gelato ── */
 function buildGelatos(){
   const g=document.getElementById('gridGelatos');
-  GELATO_TAMANHOS.forEach(gt=>{
+  const cupSizes={300:'gc-sm',500:'gc-md',750:'gc-lg',1:'gc-xl'};
+  GELATO_TAMANHOS.forEach((gt,i)=>{
     const card=document.createElement('button');
-    card.className='card-gelato';
+    const isMega=gt.limite>=99;
+    const isMedio=gt.tam==='500ml';
+    card.className='card-tamanho'+(isMedio?' card-destaque':'')+(isMega?' card-mega':'');
+    const cupClass=cupSizes[parseInt(gt.tam)]||'gc-md';
+    const ribbonHtml=isMedio?'<div class="ct-ribbon ct-ribbon-gold">⭐ Mais Pedido</div>'
+      :isMega?'<div class="ct-ribbon ct-ribbon-gold">🏆 Melhor Valor</div>':'';
     card.innerHTML=`
-      <div class="gelato-cup-wrap">
-        <div class="gelato-scoop gelato-scoop-1"></div>
-        <div class="gelato-scoop gelato-scoop-2"></div>
-        <div class="gelato-cherry"></div>
-        <div class="gelato-cup-body"></div>
+      ${ribbonHtml}
+      <div class="ct-label">${gt.label}</div>
+      <div class="gelato-cup-card ${cupClass}">
+        <div class="gc-scoop gc-scoop-1"></div>
+        <div class="gc-scoop gc-scoop-2"></div>
+        <div class="gc-cherry"></div>
+        <div class="gc-body"></div>
       </div>
-      <div class="cg-info">
-        <div class="cg-nome">${gt.label} · ${gt.tam}</div>
-        <div class="cg-sub">${gt.limite>=99?'Mix à vontade':gt.limite+' complementos'}</div>
-        <div class="cg-preco">${fmtPreco(gt.preco)}</div>
-      </div>
-      <span class="cg-seta">›</span>`;
+      <div class="ct-vol">${gt.tam.replace('ml','')}<span>${gt.tam.includes('kg')?'kg':'ml'}</span></div>
+      <div class="ct-price">R$<strong>${gt.preco}</strong></div>
+      <div class="ct-info">${isMega?'Mix à vontade':gt.limite+' complementos'}</div>
+      <div class="ct-btn">Montar</div>`;
     card.addEventListener('click',()=>abrirModalGelato(gt));
     g.appendChild(card);
   });
