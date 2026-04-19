@@ -525,8 +525,9 @@ function adicionarAoCarrinho(){
   if(S.categoria==='gelato'){
     if(!S.gelatoNome){toast('Escolha o sabor do gelato');return;}
     if(!S.cobertura){toast('Escolha uma cobertura');return;}
+    const mixInfo=S.mix.length?'Mix: '+S.mix.join(', '):'Mix: nenhum';
     addToCart({tipo:'gelato',nome:`Gelato ${S.gelatoNome} ${S.gelatoTam}`,
-      detalhe:`Cobertura: ${S.cobertura} · ${S.limite>=99?'Mix à vontade':S.mix.length?S.mix.join(', '):'Sem complementos'}${obs?' · Obs: '+obs:''}`,preco:S.preco});
+      detalhe:`Cobertura: ${S.cobertura} · ${mixInfo}${obs?' · Obs: '+obs:''}`,preco:S.preco});
   } else {
     if(S.comGelatoExtra&&!S.gelatoExtraNome){toast('Escolha o sabor do gelato');return;}
     const ilimitado=S.limite>=99;
